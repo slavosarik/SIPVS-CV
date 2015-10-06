@@ -9,7 +9,7 @@ Návod na nastavenie enviroment variables pre Apache Maven: https://maven.apache
 Vytvorenie projektu (pre Eclipse):
 - `git clone https://github.com/slavosarik/SIPVS-CV.git`
 - `cd SIPVS-CV`
-- `mvn eclipse:eclipse` - vytvorenie Eclipse struktury projektu 
+- `mvn eclipse:eclipse` - vytvorenie Eclipse štruktúry projektu 
 - spustiť Eclipse
 - Import -> General -> Import existing project into Workspace
 - zvoliť project z adresára
