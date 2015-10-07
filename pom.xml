@@ -6,6 +6,11 @@
 	<version>1.0.0</version>
 	<name>SIPVS-CV</name>
 	<description>SIPVS 2015 project </description>
+	
+	<dependencies>
+		<!--  SEM IDU KNIZNICE Z http://mvnrepository.com/ -->
+	</dependencies>
+	
 	<build>
 		<finalName>SIPVS-CV</finalName>
 		<resources>
