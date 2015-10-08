@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<biography xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="biography_schema.xsd">
+  <date_created>2015-09-10T09:24:32</date_created>
+  <place>Bratislava</place>
+  <personal_info>
+    <first_name>Branislav</first_name>
+    <surname>Široký</surname>
+    <birth_date>1969-10-29</birth_date>
+  </personal_info>
+  <contact_info>
+    <email>branislav@siroky.sk</email>
+    <phone>+421 903 940 397</phone>
+    <address>
+      <country>Slovakia</country>
+      <city>Bratislava</city>
+      <street>Ilkovičova 2</street>
+      <postal_code>84104</postal_code>
+    </address>
+  </contact_info>
+  <education>
+    <school>
+      <name>Slovenská Technická Univerzita</name>
+      <faculty>Fakulta Elektrotechniky a Informatiky</faculty>
+      <profession>Aplikovaná Informatika</profession>
+      <degree>isced_2011_7</degree>
+      <start_date>1990-09-21</start_date>
+      <end_date>1995-06-30</end_date>
+    </school>
+  </education>
+  <courses>
+    <!-- type: 0 == course, 1 == certificate -->
+    <course type="0">
+      <organization>Tunelárska elektrika, spol. s r.o.</organization>
+      <name>Elektrotechnická spôsobilosť §22</name>
+      <valid_from>2010-02-27</valid_from>
+      <valid_to>2015-02-27</valid_to>
+    </course>
+    <course type="1">
+      <organization>CISCO Network Academy</organization>
+      <name>CCNP</name>
+      <valid_from>2013-02-27</valid_from>
+    </course>
+  </courses>
+  <career>
+    <experience>
+      <employer>Fakulta Informatiky a Informačných technológií</employer>
+      <profession>Systémová administrácia</profession>
+      <description>man bash</description>
+      <start_date>1996-07-30</start_date>
+      <projects>
+        <project>
+          <name>Digitálna FIIT</name>
+          <description>curl XGET http://fiit.stuba.sk</description>
+          <role>Decision maker</role>
+        </project>
+      </projects>
+    </experience>
+  </career>
+  <skills>
+    <skill>
+      <name>Bash</name>
+      <level>expert</level>
+      <years>28</years>
+    </skill>
+    <skill>
+      <name>C</name>
+      <level>expert</level>
+      <years>22</years>
+    </skill>
+    <skill>
+      <name>C#</name>
+      <level>beginner</level>
+      <years>2</years>
+    </skill>
+  </skills>
+</biography>

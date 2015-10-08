@@ -3,6 +3,8 @@
   <xsd:element name="biography">
     <xsd:complexType>
       <xsd:sequence>
+        <xsd:element type="xsd:dateTime" name="date_created" minOccurs="1" maxOccurs="1" />
+        <xsd:element type="xsd:string" name="place" minOccurs="1" maxOccurs="1" />
         <xsd:element name="personal_info">
           <xsd:complexType>
             <xsd:sequence>
@@ -33,15 +35,15 @@
         <xsd:element name="education" minOccurs="1" maxOccurs="1">
           <xsd:complexType>
             <xsd:sequence>
-              <xsd:element name="school" minOccurs="0" maxOccurs="unbounded">
+              <xsd:element name="school" minOccurs="1" maxOccurs="unbounded">
                 <xsd:complexType>
                   <xsd:sequence>
                     <xsd:element type="xsd:string" name="name" minOccurs="1" maxOccurs="1" />
                     <xsd:element type="xsd:string" name="faculty" minOccurs="0" maxOccurs="1" />
                     <xsd:element type="xsd:string" name="profession" minOccurs="1" maxOccurs="1" />
                     <xsd:element type="degree_type" name="degree" minOccurs="1" maxOccurs="1" />
-                    <xsd:element type="xsd:dateTime" name="start_date" minOccurs="0" maxOccurs="1" />
-                    <xsd:element type="xsd:dateTime" name="end_date" minOccurs="0" maxOccurs="1" />
+                    <xsd:element type="xsd:date" name="start_date" minOccurs="1" maxOccurs="1" />
+                    <xsd:element type="xsd:date" name="end_date" minOccurs="0" maxOccurs="1" />
                   </xsd:sequence>
                 </xsd:complexType>
               </xsd:element>
@@ -65,7 +67,7 @@
             </xsd:sequence>
           </xsd:complexType>
         </xsd:element>
-        <xsd:element name="career" minOccurs="1" maxOccurs="1">
+        <xsd:element name="career" minOccurs="0" maxOccurs="1">
           <xsd:complexType>
             <xsd:sequence>
               <xsd:element name="experience" minOccurs="0" maxOccurs="unbounded">
@@ -73,9 +75,9 @@
                   <xsd:sequence>
                     <xsd:element type="xsd:string" name="employer" minOccurs="1" maxOccurs="1" />
                     <xsd:element type="xsd:string" name="profession" minOccurs="1" maxOccurs="1" />
-                    <xsd:element type="xsd:string" name="desciption" minOccurs="0" maxOccurs="1" />
+                    <xsd:element type="xsd:string" name="description" minOccurs="0" maxOccurs="1" />
                     <xsd:element type="xsd:date" name="start_date" minOccurs="1" maxOccurs="1" />
-                    <xsd:element type="xsd:string" name="end_date" minOccurs="0" maxOccurs="1" />
+                    <xsd:element type="xsd:date" name="end_date" minOccurs="0" maxOccurs="1" />
                     <xsd:element name="projects">
                       <xsd:complexType>
                         <xsd:sequence>
