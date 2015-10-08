@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:element name="biography">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="personal_info">
+          <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element type="xsd:string" name="first_name" minOccurs="1" maxOccurs="1" />
+              <xsd:element type="xsd:string" name="surname" minOccurs="1" maxOccurs="1" />
+              <xsd:element type="xsd:date" name="birth_date" minOccurs="1" maxOccurs="1" />
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+        <xsd:element name="contact_info" minOccurs="1" maxOccurs="1">
+          <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element type="xsd:string" name="email" minOccurs="1" maxOccurs="1" />
+              <xsd:element type="xsd:string" name="phone" minOccurs="1" maxOccurs="1" />
+              <xsd:element name="address">
+                <xsd:complexType>
+                  <xsd:sequence>
+                    <xsd:element type="xsd:string" name="country" minOccurs="0" maxOccurs="1" />
+                    <xsd:element type="xsd:string" name="city" minOccurs="0" maxOccurs="1" />
+                    <xsd:element type="xsd:string" name="street" minOccurs="0" maxOccurs="1" />
+                    <xsd:element type="xsd:integer" name="postal_code" minOccurs="0" maxOccurs="1" />
+                  </xsd:sequence>
+                </xsd:complexType>
+              </xsd:element>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+        <xsd:element name="education" minOccurs="1" maxOccurs="1">
+          <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name="school" minOccurs="0" maxOccurs="unbounded">
+                <xsd:complexType>
+                  <xsd:sequence>
+                    <xsd:element type="xsd:string" name="name" minOccurs="1" maxOccurs="1" />
+                    <xsd:element type="xsd:string" name="faculty" minOccurs="0" maxOccurs="1" />
+                    <xsd:element type="xsd:string" name="profession" minOccurs="1" maxOccurs="1" />
+                    <xsd:element type="degree_type" name="degree" minOccurs="1" maxOccurs="1" />
+                    <xsd:element type="xsd:dateTime" name="start_date" minOccurs="0" maxOccurs="1" />
+                    <xsd:element type="xsd:dateTime" name="end_date" minOccurs="0" maxOccurs="1" />
+                  </xsd:sequence>
+                </xsd:complexType>
+              </xsd:element>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+        <xsd:element name="courses" minOccurs="0" maxOccurs="1">
+          <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name="course" minOccurs="0" maxOccurs="unbounded">
+                <xsd:complexType>
+                  <xsd:sequence>
+                    <xsd:element type="xsd:string" name="organization" minOccurs="1" maxOccurs="1" />
+                    <xsd:element type="xsd:string" name="name" minOccurs="1" maxOccurs="1" />
+                    <xsd:element type="xsd:string" name="valid_from" minOccurs="1" maxOccurs="1" />
+                    <xsd:element type="xsd:string" name="valid_to" minOccurs="0" maxOccurs="1" />
+                  </xsd:sequence>
+                  <xsd:attribute type="xsd:integer" name="type" />
+                </xsd:complexType>
+              </xsd:element>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+        <xsd:element name="career" minOccurs="1" maxOccurs="1">
+          <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name="experience" minOccurs="0" maxOccurs="unbounded">
+                <xsd:complexType>
+                  <xsd:sequence>
+                    <xsd:element type="xsd:string" name="employer" minOccurs="1" maxOccurs="1" />
+                    <xsd:element type="xsd:string" name="profession" minOccurs="1" maxOccurs="1" />
+                    <xsd:element type="xsd:string" name="desciption" minOccurs="0" maxOccurs="1" />
+                    <xsd:element type="xsd:date" name="start_date" minOccurs="1" maxOccurs="1" />
+                    <xsd:element type="xsd:string" name="end_date" minOccurs="0" maxOccurs="1" />
+                    <xsd:element name="projects">
+                      <xsd:complexType>
+                        <xsd:sequence>
+                          <xsd:element name="project" minOccurs="0" maxOccurs="unbounded">
+                            <xsd:complexType>
+                              <xsd:sequence>
+                                <xsd:element type="xsd:string" name="name" minOccurs="1" maxOccurs="1" />
+                                <xsd:element type="xsd:string" name="description" minOccurs="1" maxOccurs="1" />
+                                <xsd:element type="xsd:string" name="role" minOccurs="1" maxOccurs="1" />
+                              </xsd:sequence>
+                            </xsd:complexType>
+                          </xsd:element>
+                        </xsd:sequence>
+                      </xsd:complexType>
+                    </xsd:element>
+                  </xsd:sequence>
+                </xsd:complexType>
+              </xsd:element>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+        <xsd:element name="skills" minOccurs="1" maxOccurs="1">
+          <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name="skill" minOccurs="0" maxOccurs="unbounded">
+                <xsd:complexType>
+                  <xsd:sequence>
+                    <xsd:element type="xsd:string" name="name" minOccurs="1" maxOccurs="1" />
+                    <xsd:element type="skill_level_type" name="level" minOccurs="1" maxOccurs="1" />
+                    <xsd:element type="xsd:string" name="years" minOccurs="1" maxOccurs="1" />
+                  </xsd:sequence>
+                </xsd:complexType>
+              </xsd:element>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:simpleType name="degree_type">
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="isced_2011_1" />
+      <xsd:enumeration value="isced_2011_2" />
+      <xsd:enumeration value="isced_2011_3" />
+      <xsd:enumeration value="isced_2011_4" />
+      <xsd:enumeration value="isced_2011_5" />
+      <xsd:enumeration value="isced_2011_6" />
+      <xsd:enumeration value="isced_2011_7" />
+      <xsd:enumeration value="isced_2011_8" />
+    </xsd:restriction>
+  </xsd:simpleType>
+  <xsd:simpleType name="skill_level_type">
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="beginner" />
+      <xsd:enumeration value="intermediate" />
+      <xsd:enumeration value="expert" />
+    </xsd:restriction>
+  </xsd:simpleType>
+</xsd:schema>
