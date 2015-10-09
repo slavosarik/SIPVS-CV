@@ -13,12 +13,15 @@ import javax.swing.UIManager;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.util.Transform;
 
-import sk.fiit.sipvs.cv.form.FormView;
+import sk.fiit.sipvs.cv.views.form.FormView;
+import sk.fiit.sipvs.cv.views.transform.TransformView;
 
 public class MainClass {
 
 	private static FormView formView;
+	private static TransformView transformView;
 	
 	public static void main(String[] args) throws IOException {
 		
@@ -30,7 +33,6 @@ public class MainClass {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (Exception e) {}
 
-		formView = new FormView();
 		
 		JFrame window = new JFrame();
 		window.setTitle("SIPVS");
@@ -43,9 +45,20 @@ public class MainClass {
 		window.add(formButton);
 		formButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				formView = new FormView();
 				formView.show();
 			}
-		});	
+		});
+		
+		JButton formButton2 = getButton("Transform", 1);
+		window.add(formButton2);
+		formButton2.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				transformView = new TransformView();
+				transformView.show();
+			}
+		});
+		
 
 		logger.info("App started");
 		
