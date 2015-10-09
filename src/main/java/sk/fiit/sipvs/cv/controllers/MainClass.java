@@ -11,6 +11,9 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.UIManager;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import sk.fiit.sipvs.cv.form.FormView;
 
 public class MainClass {
@@ -18,6 +21,11 @@ public class MainClass {
 	private static FormView formView;
 	
 	public static void main(String[] args) throws IOException {
+		
+		final Logger logger = LogManager.getLogger(MainClass.class.getName());
+		
+		logger.info("Starting app...");
+		
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (Exception e) {}
@@ -39,8 +47,9 @@ public class MainClass {
 			}
 		});	
 
-		/*System.out.println("Hello world!");
-
+		logger.info("App started");
+		
+		/*
 		InputStream is = ClassLoader.getSystemResourceAsStream("valid_example.xml");
 		BufferedReader br = null;
 		StringBuilder sb = new StringBuilder();
@@ -55,7 +64,8 @@ public class MainClass {
 			br.close();
 		}
 
-		System.out.println(sb.toString());*/
+		System.out.println(sb.toString());
+		*/
 	}
 
 	private static JButton getButton(String name, int position) {
