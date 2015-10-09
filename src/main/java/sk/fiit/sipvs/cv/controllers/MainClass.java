@@ -34,7 +34,7 @@ public class MainClass {
 		} catch (Exception e) {}
 
 		
-		JFrame window = new JFrame();
+		final JFrame window = new JFrame();
 		window.setTitle("SIPVS");
 		window.setBounds(100, 100, 280, 400);
 		window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
