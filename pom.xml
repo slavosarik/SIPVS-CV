@@ -6,20 +6,20 @@
 	<version>1.0.0</version>
 	<name>SIPVS-CV</name>
 	<description>SIPVS 2015 project </description>
-	
+
 	<dependencies>
-		<!--  SEM IDU KNIZNICE Z http://mvnrepository.com/ -->
+		<!-- SEM IDU KNIZNICE Z http://mvnrepository.com/ -->
 	</dependencies>
-	
+
 	<build>
 		<finalName>SIPVS-CV</finalName>
 		<resources>
 			<resource>
-				<filtering>false</filtering>
+				<filtering>true</filtering>
 				<directory>src/main/resources</directory>
 			</resource>
 			<resource>
-				<filtering>false</filtering>
+				<filtering>true</filtering>
 				<directory>src/main/java</directory>
 				<includes>
 					<include>**</include>
