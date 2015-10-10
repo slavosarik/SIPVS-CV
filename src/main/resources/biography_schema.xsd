@@ -8,9 +8,11 @@
         <xsd:element name="personal_info">
           <xsd:complexType>
             <xsd:sequence>
+              <xsd:element type="xsd:string" name="title_before" minOccurs="0" maxOccurs="1" />
               <xsd:element type="xsd:string" name="first_name" minOccurs="1" maxOccurs="1" />
               <xsd:element type="xsd:string" name="surname" minOccurs="1" maxOccurs="1" />
               <xsd:element type="xsd:date" name="birth_date" minOccurs="1" maxOccurs="1" />
+              <xsd:element type="xsd:string" name="title_after" minOccurs="0" maxOccurs="1" />
             </xsd:sequence>
           </xsd:complexType>
         </xsd:element>

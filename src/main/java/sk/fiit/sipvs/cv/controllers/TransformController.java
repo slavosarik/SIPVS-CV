@@ -53,4 +53,14 @@ public class TransformController {
 		transformer.transform(sourceFile, result);
 		return outWriter.getBuffer().toString();
 	}
+	
+	public static void main(String[] args) {
+		TransformController tc = new TransformController();
+		try {
+			System.out.println(tc.transform(new File("valid_example.xml"), new File("cv-text.xsl"), null));
+		} catch (TransformerException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 }
