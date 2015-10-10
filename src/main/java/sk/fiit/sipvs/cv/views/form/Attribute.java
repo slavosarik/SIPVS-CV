@@ -23,17 +23,25 @@ public class Attribute {
 		this.values = new HashMap<String, String>();
 	}
 	
+	public Attribute(Attribute otherAttr) {
+		this.name = otherAttr.name;
+		this.defaultValue = otherAttr.defaultValue;
+		this.values = new HashMap<String, String>(otherAttr.values);
+	}
+	
 	public void add(String value, String title) {
 		this.values.put(value, title);
 	}
 	
-	public int createWidgets(JComponent parent, int depth, int index) {
-		comboBox = new JComboBox<String>();
-		for (String str : this.values.values()) {
-			comboBox.addItem(str);
+	public int paint(JComponent parent, int depth, int index) {
+		if (this.comboBox == null) {
+			this.comboBox = new JComboBox<String>();
+			for (String str : this.values.values()) {
+				this.comboBox.addItem(str);
+			}
 		}
-		this.setBounds(comboBox, depth, index, 200, 100);
-		parent.add(comboBox);
+		parent.add(this.comboBox);
+		this.setBounds(this.comboBox, depth, index, 200, 100);
 		
 		return index;
 	}

@@ -9,14 +9,24 @@ public class HiddenNode extends Node {
 
 	private String value;
 	
-	public HiddenNode(String name, String value) {
-		super(name, "", false, true);
+	public HiddenNode(Node parent, String name, String value) {
+		super(parent, name, "", false, true);
 
 		this.value = value;
 	}
 	
-	public int createWidgets(JComponent parent, int depth, int index) { return index; }
+	public HiddenNode(HiddenNode otherNode) {
+		super(otherNode);
+		
+		this.value = otherNode.value;
+	}
+	
+	public int paint(JComponent parent, int depth, int index) { return index; }
 	public void setDefaultValues() {}
+	
+	public void setVisible(boolean visible) {
+		this.visible = visible;
+	}
 
 	public void getXML(Document doc, Element parentNode) {
 		Element element = doc.createElement(this.name);

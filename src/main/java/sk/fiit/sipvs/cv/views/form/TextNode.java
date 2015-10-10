@@ -13,30 +13,49 @@ public class TextNode extends Node {
 	private String defaultValue;
 	private JTextField textField;
 	private JCheckBox checkBox;
+	private JLabel label;
 	
-	public TextNode(String name, String title, String defaultValue, boolean optional, boolean defaultEnabled) {
-		super(name, title, optional, defaultEnabled);
+	public TextNode(Node parent, String name, String title, String defaultValue, boolean optional, boolean defaultEnabled) {
+		super(parent, name, title, optional, defaultEnabled);
 
 		this.defaultValue = defaultValue;
 	}
-
-	public int createWidgets(JComponent parent, int depth, int index) {
-		JLabel label = new JLabel(this.title);
-		this.setBounds(label, depth, index, 100, 0);
-		parent.add(label);
+	
+	public TextNode(TextNode otherNode) {
+		super(otherNode);
 		
-		textField = new JTextField();
-		this.setBounds(textField, depth, index, 300, 100);
-		parent.add(textField);
+		this.defaultValue = otherNode.defaultValue;
+	}
+
+	public int paint(JComponent parent, int depth, int index) {
+		if (!this.visible) return index;
+		
+		if (this.label == null) {
+			this.label = new JLabel(this.title);
+		}
+		parent.add(this.label);
+		this.setBounds(this.label, depth, index, 100, 0);
+		
+		if (this.textField == null) {
+			this.textField = new JTextField();
+		}
+		parent.add(this.textField);
+		this.setBounds(this.textField, depth, index, 300, 100);
 		
 		if (this.optional) {
-			checkBox = new JCheckBox();
-			this.setBounds(checkBox, depth, index, 24, 400);
-			checkBox.setSelected(this.defaultEnabled);
-			parent.add(checkBox);
+			if (this.checkBox == null) {
+				this.checkBox = new JCheckBox();
+				this.checkBox.setSelected(this.defaultEnabled);
+			}
+			parent.add(this.checkBox);
+			this.setBounds(this.checkBox, depth, index, 24, 400);
 		}
 
 		return index + 1;
+	}
+	
+	public void setVisible(boolean visible) {
+		this.visible = visible;
 	}
 	
 	public void setDefaultValues() {
