@@ -17,6 +17,7 @@ import javax.xml.transform.TransformerException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import sk.fiit.sipvs.cv.controllers.MainClass;
 import sk.fiit.sipvs.cv.controllers.TransformController;
 
 public class TransformView {
@@ -53,11 +54,11 @@ public class TransformView {
 		btnXSLFile.setBounds(353, 321, 89, 23);
 		window.getContentPane().add(btnXSLFile);
 
-		final JLabel lblSourceFile = new JLabel("No file was chosen");
+		final JLabel lblSourceFile = new JLabel(MainClass.NO_FILE_CHOSEN);
 		lblSourceFile.setBounds(10, 291, 323, 14);
 		window.getContentPane().add(lblSourceFile);
 
-		final JLabel lblXSLFile = new JLabel("No file was chosen");
+		final JLabel lblXSLFile = new JLabel(MainClass.NO_FILE_CHOSEN);
 		lblXSLFile.setBounds(10, 325, 188, 14);
 		window.getContentPane().add(lblXSLFile);
 
@@ -69,7 +70,7 @@ public class TransformView {
 		btnOutputFile.setBounds(353, 355, 89, 23);
 		window.getContentPane().add(btnOutputFile);
 
-		final JLabel lblOutput = new JLabel("No file was chosen");
+		final JLabel lblOutput = new JLabel(MainClass.NO_FILE_CHOSEN);
 		lblOutput.setBounds(10, 359, 323, 14);
 		window.getContentPane().add(lblOutput);
 
@@ -83,7 +84,7 @@ public class TransformView {
 					fileSource = sourceFileDialog.getSelectedFile();
 					lblSourceFile.setText(fileSource.getName());
 				} else {
-					lblSourceFile.setText("No file was chosen");
+					lblSourceFile.setText(MainClass.NO_FILE_CHOSEN);
 					fileSource = null;
 				}
 			}
@@ -99,7 +100,7 @@ public class TransformView {
 					fileXSL = xSLFileDialog.getSelectedFile();
 					lblXSLFile.setText(fileXSL.getName());
 				} else {
-					lblXSLFile.setText("No file was chosen");
+					lblXSLFile.setText(MainClass.NO_FILE_CHOSEN);
 					fileXSL = null;
 				}
 			}
@@ -136,7 +137,7 @@ public class TransformView {
 					fileOutput = saveTransformed.getSelectedFile();
 					lblOutput.setText(fileOutput.getName());
 				} else {
-					lblOutput.setText("No file was chosen");
+					lblOutput.setText(MainClass.NO_FILE_CHOSEN);
 					fileOutput = null;
 				}
 			}

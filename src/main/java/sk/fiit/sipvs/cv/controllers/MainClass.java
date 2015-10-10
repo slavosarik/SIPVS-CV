@@ -13,23 +13,26 @@ import org.apache.logging.log4j.Logger;
 
 import sk.fiit.sipvs.cv.views.form.FormView;
 import sk.fiit.sipvs.cv.views.transform.TransformView;
+import sk.fiit.sipvs.cv.views.validation.ValidationView;
 
 public class MainClass {
 
 	private static FormView formView;
 	private static TransformView transformView;
-	
+	private static ValidationView validationView;
+	public static final String NO_FILE_CHOSEN = "No file chosen";
+
 	public static void main(String[] args) throws IOException {
-		
+
 		final Logger logger = LogManager.getLogger(MainClass.class.getName());
-		
+
 		logger.info("Starting app...");
-		
+
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		} catch (Exception e) {}
+		} catch (Exception e) {
+		}
 
-		
 		final JFrame window = new JFrame();
 		window.setTitle("SIPVS");
 		window.setBounds(100, 100, 280, 400);
@@ -45,18 +48,26 @@ public class MainClass {
 				formView.show();
 			}
 		});
-		
-		JButton formButton2 = getButton("Transform", 1);
-		window.add(formButton2);
-		formButton2.addActionListener(new ActionListener() {
+
+		JButton validateButton = getButton("Validate XML", 1);
+		window.add(validateButton);
+		validateButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				validationView = new ValidationView();
+				validationView.show();
+			}
+		});
+
+		JButton transformButton = getButton("Transform XML", 2);
+		window.add(transformButton);
+		transformButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				transformView = new TransformView();
 				transformView.show();
 			}
 		});
-		
 
-		logger.info("App started");		
+		logger.info("App started");
 	}
 
 	private static JButton getButton(String name, int position) {
@@ -65,5 +76,5 @@ public class MainClass {
 
 		return button;
 	}
-	
+
 }
