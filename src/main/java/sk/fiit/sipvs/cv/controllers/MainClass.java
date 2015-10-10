@@ -2,10 +2,7 @@ package sk.fiit.sipvs.cv.controllers;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -13,7 +10,6 @@ import javax.swing.UIManager;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.util.Transform;
 
 import sk.fiit.sipvs.cv.views.form.FormView;
 import sk.fiit.sipvs.cv.views.transform.TransformView;
@@ -60,25 +56,7 @@ public class MainClass {
 		});
 		
 
-		logger.info("App started");
-		
-		/*
-		InputStream is = ClassLoader.getSystemResourceAsStream("valid_example.xml");
-		BufferedReader br = null;
-		StringBuilder sb = new StringBuilder();
-		String line;
-
-		br = new BufferedReader(new InputStreamReader(is));
-		while ((line = br.readLine()) != null) {
-			sb.append(line);
-		}
-
-		if (br != null) {
-			br.close();
-		}
-
-		System.out.println(sb.toString());
-		*/
+		logger.info("App started");		
 	}
 
 	private static JButton getButton(String name, int position) {
