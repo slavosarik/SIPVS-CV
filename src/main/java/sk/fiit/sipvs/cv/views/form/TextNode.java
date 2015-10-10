@@ -1,5 +1,6 @@
 package sk.fiit.sipvs.cv.views.form;
 
+import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
@@ -11,9 +12,10 @@ public class TextNode extends Node {
 
 	private String defaultValue;
 	private JTextField textField;
+	private JCheckBox checkBox;
 	
-	public TextNode(String name, String title, String defaultValue) {
-		super(name, title);
+	public TextNode(String name, String title, String defaultValue, boolean optional, boolean defaultEnabled) {
+		super(name, title, optional, defaultEnabled);
 
 		this.defaultValue = defaultValue;
 	}
@@ -26,6 +28,13 @@ public class TextNode extends Node {
 		textField = new JTextField();
 		this.setBounds(textField, depth, index, 300, 100);
 		parent.add(textField);
+		
+		if (this.optional) {
+			checkBox = new JCheckBox();
+			this.setBounds(checkBox, depth, index, 24, 400);
+			checkBox.setSelected(this.defaultEnabled);
+			parent.add(checkBox);
+		}
 
 		return index + 1;
 	}
@@ -35,9 +44,11 @@ public class TextNode extends Node {
 	}
 	
 	public void getXML(Document doc, Element parentNode) {
-		Element element = doc.createElement(this.name);
-		element.appendChild(doc.createTextNode(this.textField.getText()));
-		parentNode.appendChild(element);
+		if (!this.optional || this.checkBox.isSelected()) {
+			Element element = doc.createElement(this.name);
+			element.appendChild(doc.createTextNode(this.textField.getText()));
+			parentNode.appendChild(element);			
+		}
 	}
 
 }

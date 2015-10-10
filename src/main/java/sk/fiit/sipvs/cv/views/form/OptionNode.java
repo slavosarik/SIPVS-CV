@@ -16,7 +16,7 @@ public class OptionNode extends Node {
 	private JComboBox<String> comboBox;
 	
 	public OptionNode(String name, String title, Map<String, String> values, String defaultValue) {
-		super(name, title);
+		super(name, title, false, true);
 
 		this.defaultValue = defaultValue;
 		this.values = values;

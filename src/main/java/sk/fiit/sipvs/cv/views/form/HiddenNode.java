@@ -10,7 +10,7 @@ public class HiddenNode extends Node {
 	private String value;
 	
 	public HiddenNode(String name, String value) {
-		super(name, "");
+		super(name, "", false, true);
 
 		this.value = value;
 	}

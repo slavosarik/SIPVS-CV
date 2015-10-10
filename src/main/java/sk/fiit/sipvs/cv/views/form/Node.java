@@ -4,6 +4,7 @@ import java.awt.Font;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 
@@ -16,12 +17,17 @@ public class Node {
 	protected String title;
 	private List<Node> children;
 	private Attribute attr;
+	protected boolean optional;
+	protected boolean defaultEnabled;
+	private JCheckBox checkBox;
 	
-	public Node(String name, String title) {
+	public Node(String name, String title, boolean optional, boolean defaultEnabled) {
 		this.name = name;
 		this.title = title;
 		this.children = new ArrayList<Node>();
 		this.attr = null;
+		this.optional = optional;
+		this.defaultEnabled = defaultEnabled;
 	}
 	
 	public Node(String name, String title, Attribute attr) {
@@ -29,6 +35,8 @@ public class Node {
 		this.title = title;
 		this.children = new ArrayList<Node>();
 		this.attr = attr;
+		this.optional = false;
+		this.defaultEnabled = true;
 	}
 	
 	public void add(Node node) {
@@ -48,6 +56,13 @@ public class Node {
 			
 			if (this.attr != null) {
 				this.attr.createWidgets(parent, depth, nextRow);
+			}
+			
+			if (this.optional) {
+				checkBox = new JCheckBox();
+				this.setBounds(checkBox, depth, index, 24, 64);
+				checkBox.setSelected(this.defaultEnabled);
+				parent.add(checkBox);
 			}
 			
 			nextRow += 1;
@@ -71,18 +86,20 @@ public class Node {
 	}
 	
 	public void getXML(Document doc, Element parentNode) {
-		Element element = doc.createElement(this.name);
-		
-		for (Node node : this.children) {
-			node.getXML(doc, element);
+		if (!this.optional || this.checkBox.isSelected()) {
+			Element element = doc.createElement(this.name);
+			
+			for (Node node : this.children) {
+				node.getXML(doc, element);
+			}
+			
+			if (this.attr != null) {
+				this.attr.getXML(doc, element);
+			}
+	
+			if (parentNode == null) doc.appendChild(element);
+			else parentNode.appendChild(element);
 		}
-		
-		if (this.attr != null) {
-			this.attr.getXML(doc, element);
-		}
-
-		if (parentNode == null) doc.appendChild(element);
-		else parentNode.appendChild(element);
 	}
 
 	protected void setBounds(JComponent component, int depth, int index, int width, int xoffset) {
