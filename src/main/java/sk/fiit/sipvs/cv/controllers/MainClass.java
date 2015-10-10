@@ -58,7 +58,7 @@ public class MainClass {
 			}
 		});
 
-		JButton transformButton = getButton("Transform", 2);
+		JButton transformButton = getButton("Transform XML", 2);
 		window.add(transformButton);
 		transformButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
