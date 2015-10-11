@@ -112,12 +112,14 @@ public class TransformView {
 
 				if (fileXSL != null && fileSource != null) {
 
-					textArea.setText("Transformation started...");
+					logger.info("Transformation started...");
 					TransformController tc = new TransformController();
 					try {
 						textArea.setText(tc.transform(fileSource, fileXSL, fileOutput));
+						logger.info("Transformation finished.");
 					} catch (TransformerException e1) {
 						logger.error("An error occured during transformation", e1);
+						JOptionPane.showMessageDialog(window, "An error occured during transformation.", "Transformation error", JOptionPane.ERROR_MESSAGE);
 					}
 				} else {
 					logger.error("No input file chosen");

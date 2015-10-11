@@ -28,6 +28,14 @@
       <start_date>1990-09-21</start_date>
       <end_date>1995-06-30</end_date>
     </school>
+    <school>
+      <name>Slovenská Technická Univerzita</name>
+      <faculty>Fakulta Elektrotechniky a Informatiky</faculty>
+      <profession>Aplikovaná Informatika</profession>
+      <degree>isced_2011_7</degree>
+      <start_date>1987-09-21</start_date>
+      <end_date>1985-06-30</end_date>
+    </school>
   </education>
   <courses>
     <!-- type: 0 == course, 1 == certificate -->
@@ -54,6 +62,16 @@
           <name>Digitálna FIIT</name>
           <description>curl XGET http://fiit.stuba.sk</description>
           <role>Decision maker</role>
+        </project>
+        <project>
+          <name>Digitálna FIIT</name>
+          <description>curl XGET http://fiit.stuba.sk</description>
+          <role>Decision maker II.</role>
+        </project>
+        <project>
+          <name>Digitálna FIIT</name>
+          <description>curl XGET http://fiit.stuba.sk</description>
+          <role>Decision maker III.</role>
         </project>
       </projects>
     </experience>
