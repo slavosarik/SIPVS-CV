@@ -129,8 +129,10 @@ public class FormView {
 			parentNode.add(new HiddenNode(parentNode, "place", "Bratislava"));
 
 			Node personalInfo = new Node(parentNode, "personal_info", "Personal info", false, true);
+				personalInfo.add(new TextNode(parentNode, "title_before", "Title before", "Ing.", true, true));	
 				personalInfo.add(new TextNode(parentNode, "first_name", "First name", "Branislav", false, true));
 				personalInfo.add(new TextNode(parentNode, "surname", "Surname", "Široký", false, true));
+				personalInfo.add(new TextNode(parentNode, "title_after", "Title after", "PhD.", true, true));
 				personalInfo.add(new TextNode(parentNode, "birth_date", "Birth date", "1969-10-29", false, true));
 			parentNode.add(personalInfo);
 
