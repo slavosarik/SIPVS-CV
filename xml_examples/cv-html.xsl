@@ -1,45 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsl:stylesheet version="2.0"
-	xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xs="http://www.w3.org/2001/XMLSchema">
 	<xsl:output method="html" />
 	<xsl:template match="/">
 		<html>
 			<body>
 				<h2>Biography</h2>
-				<table border="1">
+				<table border="0">
 					<tr>
-						<td>Personal info</td>
+						<td valign="top">Personal info</td>
 						<td>
+							<br />
 							<xsl:apply-templates select="biography/personal_info" />
 						</td>
 					</tr>
 					<tr>
-						<td>Contact info:</td>
+						<td valign="top">Contact info:</td>
 						<td>
+							<br />
 							<xsl:apply-templates select="biography/contact_info" />
 						</td>
 					</tr>
 					<tr>
-						<td>Education</td>
+						<td valign="top">Education</td>
 						<td>
+							<br />
 							<xsl:apply-templates select="biography/education/school" />
 						</td>
 					</tr>
 					<tr>
-						<td>Courses and certificates</td>
+						<td valign="top">Courses and certificates</td>
 						<td>
+							<br />
 							<xsl:apply-templates select="biography/courses/course" />
 						</td>
 					</tr>
 					<tr>
-						<td>Experience</td>
+						<td valign="top">Experience</td>
 						<td>
+							<br />
 							<xsl:apply-templates select="biography/career/experience" />
 						</td>
 					</tr>
 					<tr>
-						<td>Skills</td>
+						<td valign="top">Skills</td>
 						<td>
+							<br />
 							<xsl:apply-templates select="biography/skills/skill" />
 						</td>
 					</tr>
@@ -212,6 +217,7 @@
 			<tr>
 				<td valign="top">Projects:</td>
 				<td>
+					<br />
 					<xsl:apply-templates select="projects/project" />
 				</td>
 			</tr>
@@ -233,6 +239,9 @@
 			Role:
 			<xsl:value-of select="role" />
 		</p>
+		<xsl:if test="position() != last()">
+			<br />
+		</xsl:if>
 	</xsl:template>
 
 	<xsl:template match="skill">

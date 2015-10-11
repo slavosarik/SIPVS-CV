@@ -56,7 +56,7 @@ public class TransformController {
 		return outWriter.getBuffer().toString();
 	}
 	
-/*
+
 	public static void main(String[] args) {
 		TransformController tc = new TransformController();
 		try {
@@ -66,5 +66,5 @@ public class TransformController {
 			e.printStackTrace();
 		}		
 	}
-*/
+
 }
