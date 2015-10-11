@@ -59,7 +59,7 @@
 			<xsl:apply-templates select="title_after" />
 		</p>
 		<p>
-			Birthdate:
+			Birth date:
 			<xsl:value-of select="format-date(birth_date,'[D01].[M01].[Y0001]')" />
 		</p>
 	</xsl:template>

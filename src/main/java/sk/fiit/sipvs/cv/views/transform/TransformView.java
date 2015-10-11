@@ -46,7 +46,7 @@ public class TransformView {
 		textArea.setFont(font);
 		scrollPane.setViewportView(textArea);
 
-		JButton btnSourceFile = new JButton("Source file");
+		JButton btnSourceFile = new JButton("XML file");
 		btnSourceFile.setBounds(353, 287, 89, 23);
 		window.getContentPane().add(btnSourceFile);
 

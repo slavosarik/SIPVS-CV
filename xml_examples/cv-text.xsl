@@ -24,7 +24,7 @@ Full name: <xsl:apply-templates select="title_before" />
 <xsl:text> </xsl:text>
 <xsl:value-of select="surname" />
 <xsl:apply-templates select="title_after" />		
-Birthdate: <xsl:value-of select="format-date(birth_date,'[D01].[M01].[Y0001]')" />		
+Birth date: <xsl:value-of select="format-date(birth_date,'[D01].[M01].[Y0001]')" />		
 </xsl:template>
 
 <xsl:template match="title_before">	
