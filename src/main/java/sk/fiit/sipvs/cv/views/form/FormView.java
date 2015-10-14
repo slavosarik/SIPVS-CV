@@ -121,7 +121,7 @@ public class FormView {
 		courseType1.add("1", "Certificate");
 		courseType1.add("0", "Course");
 		
-		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
+		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 		String nowAsISO = df.format(new Date());
 
 		parentNode = new Node(null, "biography", "", false, true);
