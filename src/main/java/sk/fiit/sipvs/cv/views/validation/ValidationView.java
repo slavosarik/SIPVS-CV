@@ -62,10 +62,8 @@ public class ValidationView {
 		window.getContentPane().setLayout(null);
 
 		// File Chooser with Filters
-		FileNameExtensionFilter xmlFilter = new FileNameExtensionFilter("eXtensible Markup Language files (.xml)",
-				"xml");
-		FileNameExtensionFilter xsdFilter = new FileNameExtensionFilter(
-				"eXtensible Markup Language Schema Definition files (.xsd)", "xsd");
+		FileNameExtensionFilter xmlFilter = new FileNameExtensionFilter("XML files (.xml)", "xml");
+		FileNameExtensionFilter xsdFilter = new FileNameExtensionFilter("XML Schema files (.xsd)", "xsd");
 
 		xmlFileChooser = new JFileChooser();
 		xmlFileChooser.setAcceptAllFileFilterUsed(false);
@@ -160,7 +158,7 @@ public class ValidationView {
 		validationTextArea.setWrapStyleWord(true);
 		validationTextArea.setLineWrap(true);
 		validationTextArea.setEditable(false);
-		validationTextArea.setFocusable(false);		
+		validationTextArea.setFocusable(false);
 		validationTextArea.setFont(new Font("Arial", Font.PLAIN, 14));
 		scrollPane.setViewportView(validationTextArea);
 

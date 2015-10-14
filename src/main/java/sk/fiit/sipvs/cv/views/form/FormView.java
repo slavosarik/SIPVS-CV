@@ -15,6 +15,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.OutputKeys;
@@ -56,6 +57,9 @@ public class FormView {
 			}
 		});
 		
+		// File Chooser Filter
+		final FileNameExtensionFilter xmlFilter = new FileNameExtensionFilter("XML files (.xml)", "xml");
+		
 		// Save XML button
 		JButton saveXML = new JButton("Save XML");
 		saveXML.setBounds(720 - 100 - 32, 20, 100, 24);
@@ -76,9 +80,17 @@ public class FormView {
 					DOMSource source = new DOMSource(doc);
 					
 					final JFileChooser fc = new JFileChooser();
+					fc.setAcceptAllFileFilterUsed(false);
+					fc.setFileFilter(xmlFilter);
 					int returnVal = fc.showSaveDialog(window);
-					if (returnVal == JFileChooser.APPROVE_OPTION) {
-						File file = fc.getSelectedFile();
+					if (returnVal == JFileChooser.APPROVE_OPTION) {						
+						String filename = fc.getSelectedFile().toString();
+						
+						if (!filename.endsWith(".xml")) {
+							filename += ".xml";							
+						}
+						
+						File file = new File(filename);
 						StreamResult result = new StreamResult(file);
 						transformer.transform(source, result);
 					}

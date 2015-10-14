@@ -12,6 +12,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.xml.transform.TransformerException;
 
 import org.apache.logging.log4j.LogManager;
@@ -74,7 +75,13 @@ public class TransformView {
 		lblOutput.setBounds(10, 359, 323, 14);
 		window.getContentPane().add(lblOutput);
 
+		// File Chooser with Filters
+		FileNameExtensionFilter xmlFilter = new FileNameExtensionFilter("XML files (.xml)", "xml");
+		FileNameExtensionFilter xslFilter = new FileNameExtensionFilter("XSLT Stylesheet files (.xsl)", "xsl");
+
 		final JFileChooser sourceFileDialog = new JFileChooser();
+		sourceFileDialog.setAcceptAllFileFilterUsed(false);
+		sourceFileDialog.setFileFilter(xmlFilter);
 		sourceFileDialog.setCurrentDirectory(workingDirectory);
 		btnSourceFile.addActionListener(new ActionListener() {
 			@Override
@@ -91,6 +98,8 @@ public class TransformView {
 		});
 
 		final JFileChooser xSLFileDialog = new JFileChooser();
+		xSLFileDialog.setAcceptAllFileFilterUsed(false);
+		xSLFileDialog.setFileFilter(xslFilter);
 		xSLFileDialog.setCurrentDirectory(workingDirectory);
 		btnXSLFile.addActionListener(new ActionListener() {
 			@Override
@@ -119,11 +128,13 @@ public class TransformView {
 						logger.info("Transformation finished.");
 					} catch (TransformerException e1) {
 						logger.error("An error occured during transformation", e1);
-						JOptionPane.showMessageDialog(window, "An error occured during transformation.", "Transformation error", JOptionPane.ERROR_MESSAGE);
+						JOptionPane.showMessageDialog(window, "An error occured during transformation.",
+								"Transformation error", JOptionPane.ERROR_MESSAGE);
 					}
 				} else {
 					logger.error("No input file chosen");
-					JOptionPane.showMessageDialog(window, "No input file chosen.", "File input error", JOptionPane.WARNING_MESSAGE);
+					JOptionPane.showMessageDialog(window, "No input file chosen.", "File input error",
+							JOptionPane.WARNING_MESSAGE);
 				}
 
 			}
