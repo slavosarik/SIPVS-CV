@@ -160,8 +160,7 @@ public class ValidationView {
 		validationTextArea.setWrapStyleWord(true);
 		validationTextArea.setLineWrap(true);
 		validationTextArea.setEditable(false);
-		validationTextArea.setFocusable(false);
-		validationTextArea.setBackground(UIManager.getColor("Label.background"));
+		validationTextArea.setFocusable(false);		
 		validationTextArea.setFont(new Font("Arial", Font.PLAIN, 14));
 		scrollPane.setViewportView(validationTextArea);
 
