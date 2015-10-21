@@ -279,13 +279,13 @@ public class SignView {
 		textArea.setFocusable(false);
 		textArea.setFont(new Font("Arial", Font.PLAIN, 14));
 		scrollPane.setViewportView(textArea);
-		
+
 		// Document sign status
 		Image iconImg = ((ImageIcon) UIManager.getIcon("OptionPane.informationIcon")).getImage();
 		Icon infoIcon = new ImageIcon(iconImg.getScaledInstance(24, 24, Image.SCALE_AREA_AVERAGING));
-		
+
 		documentSignedLabel = new JLabel(infoIcon);
-		documentSignedLabel.setBounds(32 + 100 + 200 + 4* MainClass.HORIZONTAL_SPACING, 410 - 20 - 24, 200, 24);
+		documentSignedLabel.setBounds(32 + 100 + 200 + 4 * MainClass.HORIZONTAL_SPACING, 410 - 20 - 24, 200, 24);
 		documentSignedLabel.setHorizontalAlignment(SwingConstants.LEFT);
 		setDocumentLabel(false);
 		window.getContentPane().add(documentSignedLabel);
