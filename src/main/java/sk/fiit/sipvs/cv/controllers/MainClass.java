@@ -1,26 +1,37 @@
 package sk.fiit.sipvs.cv.controllers;
 
+import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.UIManager;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import sk.fiit.sipvs.cv.views.form.FormView;
+import sk.fiit.sipvs.cv.views.sign.SignView;
 import sk.fiit.sipvs.cv.views.transform.TransformView;
 import sk.fiit.sipvs.cv.views.validation.ValidationView;
 
 public class MainClass {
 
+	// GUI constants
+	public static final Integer VERTICAL_SPACING = 5;
+	public static final Integer HORIZONTAL_SPACING = 10;
+
+	// GUI strings
+	public static final String MISSING_FILE = "Missing file";
+	public static final String NO_FILE_CHOSEN = "No file chosen";
+
 	private static FormView formView;
 	private static TransformView transformView;
 	private static ValidationView validationView;
-	public static final String NO_FILE_CHOSEN = "No file chosen";
+	private static SignView signView;
 
 	public static void main(String[] args) throws IOException {
 
@@ -67,7 +78,25 @@ public class MainClass {
 			}
 		});
 
+		JButton signButton = getButton("Sign XML", 3);
+		window.add(signButton);
+		signButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				signView = new SignView();
+				signView.show();
+			}
+		});
+
 		logger.info("App started");
+	}
+
+	public static JLabel createBoldLabel(String text) {
+		JLabel label = new JLabel(text);
+		Font font = label.getFont();
+		Font boldFont = new Font(font.getFontName(), Font.BOLD, font.getSize() + 2);
+		label.setFont(boldFont);
+
+		return label;
 	}
 
 	private static JButton getButton(String name, int position) {

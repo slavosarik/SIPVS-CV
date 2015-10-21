@@ -13,7 +13,6 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import javax.swing.UIManager;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.apache.logging.log4j.LogManager;
@@ -31,9 +30,6 @@ import sk.fiit.sipvs.cv.models.ValidationResult;
  */
 public class ValidationView {
 
-	private static final Integer VERTICAL_SPACING = 5;
-	private static final Integer HORIZONTAL_SPACING = 10;
-	private static final String MISSING_FILE = "Missing file";
 	private static final String MISSING_XML_FILE_USER = "XML file has not been chosen. Please choose the missing file and validate XML file again.";
 	private static final String MISSING_XSD_FILE_USER = "XSD file has not been chosen. Please choose the missing file and validate XML file again.";
 	private static final String MISSING_XML_FILE_LOGGER = "Validation error. Missing XML file.";
@@ -74,12 +70,12 @@ public class ValidationView {
 		xsdFileChooser.setFileFilter(xsdFilter);
 
 		// XML File
-		final JLabel xmlFileLabel = createBoldLabel("XML File");
+		final JLabel xmlFileLabel = MainClass.createBoldLabel("XML File");
 		xmlFileLabel.setBounds(32, 20, 150, 24);
 		window.getContentPane().add(xmlFileLabel);
 
 		JButton xmlFileBtn = new JButton("Choose file");
-		xmlFileBtn.setBounds(32, 20 + 24 + VERTICAL_SPACING, 100, 24);
+		xmlFileBtn.setBounds(32, 20 + 24 + MainClass.VERTICAL_SPACING, 100, 24);
 		window.getContentPane().add(xmlFileBtn);
 		xmlFileBtn.addActionListener(new ActionListener() {
 
@@ -106,16 +102,16 @@ public class ValidationView {
 		});
 
 		xmlFilePathLabel = new JLabel(MainClass.NO_FILE_CHOSEN);
-		xmlFilePathLabel.setBounds(32 + 100 + HORIZONTAL_SPACING, 20 + 24 + VERTICAL_SPACING, 200, 24);
+		xmlFilePathLabel.setBounds(32 + 100 + MainClass.HORIZONTAL_SPACING, 20 + 24 + MainClass.VERTICAL_SPACING, 200, 24);
 		window.getContentPane().add(xmlFilePathLabel);
 
 		// XSD File
-		final JLabel xsdFileLabel = createBoldLabel("XML Schema File");
+		final JLabel xsdFileLabel = MainClass.createBoldLabel("XML Schema File");
 		xsdFileLabel.setBounds(32, 90, 150, 24);
 		window.getContentPane().add(xsdFileLabel);
 
 		JButton xsdFileBtn = new JButton("Choose file");
-		xsdFileBtn.setBounds(32, 90 + 24 + VERTICAL_SPACING, 100, 24);
+		xsdFileBtn.setBounds(32, 90 + 24 + MainClass.VERTICAL_SPACING, 100, 24);
 		window.getContentPane().add(xsdFileBtn);
 		xsdFileBtn.addActionListener(new ActionListener() {
 
@@ -142,16 +138,16 @@ public class ValidationView {
 		});
 
 		xsdFilePathLabel = new JLabel(MainClass.NO_FILE_CHOSEN);
-		xsdFilePathLabel.setBounds(32 + 100 + HORIZONTAL_SPACING, 90 + 24 + VERTICAL_SPACING, 200, 24);
+		xsdFilePathLabel.setBounds(32 + 100 + MainClass.HORIZONTAL_SPACING, 90 + 24 + MainClass.VERTICAL_SPACING, 200, 24);
 		window.getContentPane().add(xsdFilePathLabel);
 
 		// Validation output
-		final JLabel validationLabel = createBoldLabel("XML Validation");
-		validationLabel.setBounds(32, 90 + 2 * 24 + 4 * VERTICAL_SPACING, 150, 24);
+		final JLabel validationLabel = MainClass.createBoldLabel("XML Validation");
+		validationLabel.setBounds(32, 90 + 2 * 24 + 4 * MainClass.VERTICAL_SPACING, 150, 24);
 		window.getContentPane().add(validationLabel);
 
 		JScrollPane scrollPane = new JScrollPane();
-		scrollPane.setBounds(32, 90 + 4 * 24 + 7 * VERTICAL_SPACING, 480 - 64, 5 * 24);
+		scrollPane.setBounds(32, 90 + 4 * 24 + 7 * MainClass.VERTICAL_SPACING, 480 - 64, 5 * 24);
 		window.getContentPane().add(scrollPane);
 
 		validationTextArea = new JTextArea();
@@ -163,7 +159,7 @@ public class ValidationView {
 		scrollPane.setViewportView(validationTextArea);
 
 		JButton validationBtn = new JButton("Validate XML");
-		validationBtn.setBounds(32, 90 + 3 * 24 + 5 * VERTICAL_SPACING, 100, 24);
+		validationBtn.setBounds(32, 90 + 3 * 24 + 5 * MainClass.VERTICAL_SPACING, 100, 24);
 		window.getContentPane().add(validationBtn);
 		validationBtn.addActionListener(new ActionListener() {
 
@@ -185,11 +181,11 @@ public class ValidationView {
 					}
 				} else if (xmlFile == null) {
 					logger.error(MISSING_XML_FILE_LOGGER);
-					JOptionPane.showMessageDialog(window, MISSING_XML_FILE_USER, MISSING_FILE,
+					JOptionPane.showMessageDialog(window, MISSING_XML_FILE_USER, MainClass.MISSING_FILE,
 							JOptionPane.ERROR_MESSAGE);
 				} else {
 					logger.error(MISSING_XSD_FILE_LOGGER);
-					JOptionPane.showMessageDialog(window, MISSING_XSD_FILE_USER, MISSING_FILE,
+					JOptionPane.showMessageDialog(window, MISSING_XSD_FILE_USER, MainClass.MISSING_FILE,
 							JOptionPane.ERROR_MESSAGE);
 				}
 			}
@@ -199,14 +195,5 @@ public class ValidationView {
 	public void show() {
 		window.setVisible(true);
 		window.repaint();
-	}
-
-	private JLabel createBoldLabel(String text) {
-		JLabel label = new JLabel(text);
-		Font font = label.getFont();
-		Font boldFont = new Font(font.getFontName(), Font.BOLD, font.getSize() + 2);
-		label.setFont(boldFont);
-
-		return label;
-	}
+	}	
 }
