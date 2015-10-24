@@ -25,6 +25,11 @@
 			<version>9.6.0-7</version>
 		</dependency>
 
+		<dependency>
+			<groupId>net.sf.jacob-project</groupId>
+			<artifactId>jacob</artifactId>
+			<version>1.14.3</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -76,6 +81,9 @@
 				<version>2.7</version>
 				<configuration>
 					<encoding>UTF-8</encoding>
+					<nonFilteredFileExtensions>
+			            <nonFilteredFileExtension>dll</nonFilteredFileExtension>
+			        </nonFilteredFileExtensions>
 				</configuration>
 			</plugin>
 			<plugin>
