@@ -1,147 +1,279 @@
-<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xs="http://www.w3.org/2001/XMLSchema">
-<xsl:output method="text" />
-<xsl:template match="/">
-Biography
+<xsl:stylesheet version="2.0"
+	xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xsl:output method="text" />
 
-Personal info: <xsl:apply-templates select="biography/personal_info" />
+	<xsl:param name="new_line">
+		<xsl:text>&#xD;&#xa;</xsl:text>
+	</xsl:param>
 
-Contact info: <xsl:apply-templates select="biography/contact_info" />
+	<xsl:param name="tab">
+		<xsl:text>&#x9;</xsl:text>
+	</xsl:param>
 
-Education: <xsl:apply-templates select="biography/education/school"/>
+	<xsl:param name="space">
+		<xsl:text>&#160;</xsl:text>
+	</xsl:param>
 
-Courses and certificates: <xsl:apply-templates select="biography/courses/course"/>
+	<xsl:template match="/">
+		<xsl:text>Biography</xsl:text>
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$new_line" />
+		<xsl:text>Personal info: </xsl:text>
+		<xsl:apply-templates select="biography/personal_info" />
+		<xsl:value-of select="$new_line" />
+		<xsl:text>Contact info:</xsl:text>
+		<xsl:apply-templates select="biography/contact_info" />
+		<xsl:value-of select="$new_line" />
+		<xsl:text>Education:</xsl:text>
+		<xsl:apply-templates select="biography/education/school" />
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$new_line" />
+		<xsl:text>Courses and certificates:</xsl:text>
+		<xsl:apply-templates select="biography/courses/course" />
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$new_line" />
+		<xsl:text>Experience:</xsl:text>
+		<xsl:apply-templates select="biography/career/experience" />
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$new_line" />
+		<xsl:text>Skills:</xsl:text>
+		<xsl:apply-templates select="biography/skills/skill" />
+		<xsl:value-of select="$new_line" />
+	</xsl:template>
 
-Experience: <xsl:apply-templates select="biography/career/experience"/>
+	<xsl:template match="personal_info">
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Full name:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:apply-templates select="title_before" />
+		<xsl:value-of select="first_name" />
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="surname" />
+		<xsl:apply-templates select="title_after" />
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Birth date:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="format-date(birth_date,'[D01].[M01].[Y0001]')" />
+		<xsl:value-of select="$new_line" />
+	</xsl:template>
 
-Skills: <xsl:apply-templates select="biography/skills/skill"/>
+	<xsl:template match="title_before">
+		<xsl:if test=". != ''">
+			<xsl:value-of select="." />
+			<xsl:value-of select="$space" />
+		</xsl:if>
+	</xsl:template>
 
-</xsl:template>
+	<xsl:template match="title_after">
+		<xsl:if test=". != ''">
+			<xsl:value-of select="$space" />
+			<xsl:value-of select="." />
+		</xsl:if>
+	</xsl:template>
 
-<xsl:template match="personal_info">
-<xsl:text>
-	</xsl:text>Full name: <xsl:apply-templates select="title_before" />
-<xsl:value-of select="first_name" />
-<xsl:text> </xsl:text>
-<xsl:value-of select="surname" />
-<xsl:apply-templates select="title_after" />
-<xsl:text>
-	</xsl:text>Birth date: <xsl:value-of select="format-date(birth_date,'[D01].[M01].[Y0001]')" />		
-</xsl:template>
+	<xsl:template match="contact_info">
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Email:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="email" />
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Phone:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="phone" />
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Address:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:apply-templates select="address" />
+	</xsl:template>
 
-<xsl:template match="title_before">	
-<xsl:if test=". != ''">
-<xsl:value-of select="." />	
-<xsl:text> </xsl:text>
-</xsl:if>
-</xsl:template>
+	<xsl:template match="address">
+		<xsl:value-of select="street" />
+		<xsl:text>,</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="postal_code" />
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="city" />
+		<xsl:text>,</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="country" />
+		<xsl:value-of select="$new_line" />
+	</xsl:template>
 
-<xsl:template match="title_after">
-<xsl:if test=". != ''">	
-<xsl:text> </xsl:text>
-<xsl:value-of select="." />
-</xsl:if>	
-</xsl:template>
+	<xsl:template match="school">
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Name:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="name" />
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Faculty:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="faculty" />
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Profession:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="profession" />
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Degree:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:choose>
+			<xsl:when test="degree = 'isced_2011_8'">
+				<xsl:text>Doctoral or equivalent</xsl:text>
+			</xsl:when>
+			<xsl:when test="degree = 'isced_2011_7'">
+				<xsl:text>Master or equivalent</xsl:text>
+			</xsl:when>
+			<xsl:when test="degree = 'isced_2011_6'">
+				<xsl:text>Bachelor or equivalent</xsl:text>
+			</xsl:when>
+			<xsl:when test="degree = 'isced_2011_5'">
+				<xsl:text>Short-cycle tertiary education</xsl:text>
+			</xsl:when>
+			<xsl:when test="degree = 'isced_2011_4'">
+				<xsl:text>Post-secondary non-tertiary education</xsl:text>
+			</xsl:when>
+			<xsl:when test="degree = 'isced_2011_3'">
+				<xsl:text>Upper secondary education</xsl:text>
+			</xsl:when>
+			<xsl:when test="degree = 'isced_2011_2'">
+				<xsl:text>Lower secondary education</xsl:text>
+			</xsl:when>
+			<xsl:when test="degree = 'isced_2011_1'">
+				<xsl:text>Primary education</xsl:text>
+			</xsl:when>
+		</xsl:choose>
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Start date:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="format-date(start_date,'[D01].[M01].[Y0001]')" />
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>End date:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="format-date(end_date,'[D01].[M01].[Y0001]')" />
+		<xsl:if test="position() != last()">
+			<xsl:value-of select="$new_line" />
+		</xsl:if>
+	</xsl:template>
 
-<xsl:template match="contact_info">	
-<xsl:text>
-	</xsl:text>Email: <xsl:value-of select="email" />
-<xsl:text>
-	</xsl:text>Phone: <xsl:value-of select="phone" />
-<xsl:text>
-	</xsl:text>Address: <xsl:apply-templates select="address" />
-</xsl:template>
+	<xsl:template match="course">
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Type:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:choose>
+			<xsl:when test="@type = 0">
+				<xsl:text>Course</xsl:text>
+			</xsl:when>
+			<xsl:when test="@type = 1">
+				<xsl:text>Certificate</xsl:text>
+			</xsl:when>
+		</xsl:choose>
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Organization:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="organization" />
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Name:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="name" />
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Valid from:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="format-date(valid_from,'[D01].[M01].[Y0001]')" />
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Valid to:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="format-date(valid_to,'[D01].[M01].[Y0001]')" />
+		<xsl:if test="position() != last()">
+			<xsl:value-of select="$new_line" />
+		</xsl:if>
+	</xsl:template>
 
-<xsl:template match="address">	
-<xsl:value-of select="street"/>
-<xsl:text>, </xsl:text>
-<xsl:value-of select="postal_code"/>
-<xsl:text> </xsl:text>
-<xsl:value-of select="city"/>
-<xsl:text>, </xsl:text>
-<xsl:value-of select="country" />
-</xsl:template>
+	<xsl:template match="experience">
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Employer:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="employer" />
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Profession:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="profession" />
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Description:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="description" />
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Start date:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="format-date(start_date,'[D01].[M01].[Y0001]')" />
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Projects:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:apply-templates select="projects/project" />
+		<xsl:if test="position() != last()">
+			<xsl:value-of select="$new_line" />
+		</xsl:if>
+	</xsl:template>
 
-<xsl:template match="school">	
-<xsl:text>
-	</xsl:text>Name: <xsl:value-of select="name"/>
-<xsl:text>
-	</xsl:text>Faculty: <xsl:value-of select="faculty"/>
-<xsl:text>
-	</xsl:text>Profession: <xsl:value-of select="profession"/>
-<xsl:text>
-	</xsl:text>Degree: <xsl:choose>
-<xsl:when test="degree = 'isced_2011_8'">Doctoral or equivalent</xsl:when>
-<xsl:when test="degree = 'isced_2011_7'">Master or equivalent</xsl:when>
-<xsl:when test="degree = 'isced_2011_6'">Bachelor or equivalent</xsl:when>
-<xsl:when test="degree = 'isced_2011_5'">Short-cycle tertiary education</xsl:when>
-<xsl:when test="degree = 'isced_2011_4'">Post-secondary non-tertiary education</xsl:when>
-<xsl:when test="degree = 'isced_2011_3'">Upper secondary education</xsl:when>
-<xsl:when test="degree = 'isced_2011_2'">Lower secondary education</xsl:when>
-<xsl:when test="degree = 'isced_2011_1'">Primary education</xsl:when>
-</xsl:choose>
-<xsl:text>
-	</xsl:text>Start date: <xsl:value-of select="format-date(start_date,'[D01].[M01].[Y0001]')" />
-<xsl:text>
-	</xsl:text>End date: <xsl:value-of select="format-date(end_date,'[D01].[M01].[Y0001]')" />
-<xsl:if test="position() != last()">
-<xsl:text>
-</xsl:text>
-</xsl:if>
-</xsl:template>
+	<xsl:template match="project">
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Name:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="name" />
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Description:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="description" />
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Role:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="role" />
+		<xsl:if test="position() != last()">
+			<xsl:value-of select="$new_line" />
+		</xsl:if>
+	</xsl:template>
 
-<xsl:template match="course">	
-<xsl:text>
-	</xsl:text>Type: <xsl:choose>
-<xsl:when test="@type = 0">Course</xsl:when>
-<xsl:when test="@type = 1">Certificate</xsl:when>
-</xsl:choose>
-<xsl:text>
-	</xsl:text>Organization: <xsl:value-of select="organization"/>
-<xsl:text>
-	</xsl:text>Name: <xsl:value-of select="name" />
-<xsl:text>
-	</xsl:text>Valid from: <xsl:value-of select="format-date(valid_from,'[D01].[M01].[Y0001]')" />
-<xsl:text>
-	</xsl:text>Valid to: <xsl:value-of select="format-date(valid_to,'[D01].[M01].[Y0001]')" />
-<xsl:if test="position() != last()">
-<xsl:text>
-</xsl:text>
-</xsl:if>
-</xsl:template>
+	<xsl:template match="skill">
+		<xsl:value-of select="$new_line" />
+		<xsl:value-of select="$tab" />
+		<xsl:text>Name:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="name" />
+		<xsl:text>,</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:text>Level:</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="level" />
+		<xsl:text>,</xsl:text>
+		<xsl:value-of select="$space" />
+		<xsl:value-of select="years" />
+		<xsl:value-of select="$space" />
+		<xsl:text>years</xsl:text>
+	</xsl:template>
 
-<xsl:template match="experience">
-<xsl:text>
-	</xsl:text>Employer: <xsl:value-of select="employer" />	
-<xsl:text>
-	</xsl:text>Profession: <xsl:value-of select="profession" />
-<xsl:text>
-	</xsl:text>Description: <xsl:value-of select="description" />
-<xsl:text>
-	</xsl:text>Start date: <xsl:value-of select="format-date(start_date,'[D01].[M01].[Y0001]')" />
-<xsl:text>
-	</xsl:text>Projects: <xsl:apply-templates select="projects/project"/>
-<xsl:if test="position() != last()">
-<xsl:text>
-</xsl:text>
-</xsl:if>
-</xsl:template>
-
-<xsl:template match="project">
-<xsl:text>
-		</xsl:text>Name: <xsl:value-of select="name" />
-<xsl:text>
-		</xsl:text>Description: <xsl:value-of select="description" />
-<xsl:text>
-		</xsl:text>Role: <xsl:value-of select="role" />
-<xsl:if test="position() != last()">
-<xsl:text>
-</xsl:text>
-</xsl:if>
-</xsl:template>	
-
-<xsl:template match="skill">	
-<xsl:text>
-	</xsl:text>Name: <xsl:value-of select="name" /><xsl:text>, </xsl:text> Level: <xsl:value-of select="level" /> <xsl:text>, </xsl:text> <xsl:value-of select="years" /><xsl:text> years </xsl:text> 
-</xsl:template>
-	
 </xsl:stylesheet>
