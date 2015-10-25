@@ -46,7 +46,7 @@ public class ValidationView {
 
 	private File xmlFile;
 	private File xsdFile;
-	private File lastDirectory = new File(System.getProperty("user.dir"));;
+	private File lastDirectory = new File(System.getProperty("user.dir"));
 
 	private Logger logger = LogManager.getLogger(ValidationView.class.getName());
 

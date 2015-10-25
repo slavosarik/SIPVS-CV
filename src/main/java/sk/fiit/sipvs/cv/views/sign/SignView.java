@@ -49,7 +49,7 @@ public class SignView {
 	private File xmlFile;
 	private File xsdFile;
 	private File xslFile;
-	private File lastDirectory = new File(System.getProperty("user.dir"));;
+	private File lastDirectory = new File(System.getProperty("user.dir"));
 
 	private JTextArea textArea;
 
