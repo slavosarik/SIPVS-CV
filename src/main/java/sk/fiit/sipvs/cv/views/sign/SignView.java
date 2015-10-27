@@ -45,12 +45,10 @@ public class SignView {
 	private final JFileChooser xmlFileChooser;
 	private final JFileChooser xsdFileChooser;
 	private final JFileChooser xslFileChooser;
-	private final JFileChooser cerFileChooser;
 
 	private File xmlFile;
 	private File xsdFile;
 	private File xslFile;
-	private File cerFile;
 	private File lastDirectory = new File(System.getProperty("user.dir"));
 
 	private JTextArea textArea;
@@ -70,8 +68,6 @@ public class SignView {
 		FileNameExtensionFilter xmlFilter = new FileNameExtensionFilter("XML files (.xml)", "xml");
 		FileNameExtensionFilter xsdFilter = new FileNameExtensionFilter("XML Schema files (.xsd)", "xsd");
 		FileNameExtensionFilter xslFilter = new FileNameExtensionFilter("XSLT Stylesheet (.xsl)", "xsl");
-		FileNameExtensionFilter cerFilter = new FileNameExtensionFilter("Certificate (.cer)", "cer");
-		
 
 		xmlFileChooser = new JFileChooser();
 		xmlFileChooser.setAcceptAllFileFilterUsed(false);
@@ -85,10 +81,6 @@ public class SignView {
 		xslFileChooser.setAcceptAllFileFilterUsed(false);
 		xslFileChooser.setFileFilter(xslFilter);
 
-		cerFileChooser = new JFileChooser();
-		cerFileChooser.setAcceptAllFileFilterUsed(false);
-		cerFileChooser.setFileFilter(cerFilter);
-		
 		// XML File
 		final JLabel xmlFileLabel = MainClass.createBoldLabel("XML File");
 		xmlFileLabel.setBounds(32, 20, 150, 24);
@@ -259,26 +251,12 @@ public class SignView {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				
-				// Set current directory to last opened directory
-				cerFileChooser.setCurrentDirectory(lastDirectory);
 
-				int returnVal = cerFileChooser.showOpenDialog(window);
-
-				if (returnVal == JFileChooser.APPROVE_OPTION) {
-					cerFile = cerFileChooser.getSelectedFile();
-					lastDirectory = cerFile;
-					
-					//TODO funkcia pre podpis
-					if(true){
-						setDocumentLabel(true);
-					}else{
-						setDocumentLabel(false);
-					}
+				// TODO funkcia pre podpis
+				if (true) {
+					setDocumentLabel(true);
 				} else {
-					JOptionPane.showMessageDialog(window, "CER " + MISSING_FILE_USER, MainClass.NO_FILE_CHOSEN,
-							JOptionPane.ERROR_MESSAGE);
-					cerFile = null;
+					setDocumentLabel(false);
 				}
 
 			}
