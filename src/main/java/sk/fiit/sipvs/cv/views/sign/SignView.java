@@ -6,7 +6,9 @@ import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -257,7 +259,7 @@ public class SignView {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				// Podpisovanie
+				// Signing
 				DSigAppWrapper ditecApp;
 				DSigAppXmlPluginWrapper ditecXML;
 
@@ -265,42 +267,64 @@ public class SignView {
 					ditecApp = new DSigAppWrapper();
 					ditecXML = new DSigAppXmlPluginWrapper();
 
-					// Vytvorenie XML objektu
-					Object xmlObject = ditecXML.CreateObject("aaa", "Pokus",
+					// Create XML object
+					Object xmlObject = ditecXML.CreateObject("id1", "Dokument",
 							readFile(xmlFile.getAbsolutePath()),
 							readFile(xsdFile.getAbsolutePath()),
 							"", "http://www.w3.org/2001/XMLSchema",
-							readFile(xslFile.getAbsolutePath()), "http://www.w3.org/1999/XSL/Transform");
-					System.out.println(ditecXML.getErrorMessage());
+							readFile(xslFile.getAbsolutePath()),
+							"http://www.w3.org/1999/XSL/Transform");
+
+					logger.error(ditecXML.getErrorMessage());
 					
-					// Vlozenie XML objektu
+					// Add XML object
 					int addRes = ditecApp.AddObject(xmlObject);
 					if (addRes != 0) {
-						System.out.println(ditecApp.getErrorMessage());
-						System.out.println(addRes);
+						logger.error(ditecApp.getErrorMessage());
+						logger.error(addRes);
 					} else {
-						// Podpisanie
-						int signRes = ditecApp.Sign("bbb", "sha256", "urn:oid:1.3.158.36061701.1.2.1");
+						// Sign
+						int signRes = ditecApp.Sign("id2", "sha256", "urn:oid:1.3.158.36061701.1.2.1");
 
 						if (signRes != 0) {
-							System.out.println(signRes);
-							System.out.println(ditecApp.getErrorMessage());
+							logger.error(signRes);
+							logger.error(ditecApp.getErrorMessage());
 						} else {
-							// String xmlOutput = ditecApp.getSignedXmlWithEnvelope();
-							// TODO: Save
+							logger.info("Successfully signed");
+							String xmlOutput = ditecApp.getSignedXmlWithEnvelope();
+							
+							// Save file
+							final FileNameExtensionFilter xmlFilter = new FileNameExtensionFilter("XML files (.xml)", "xml");
+							
+							final JFileChooser fc = new JFileChooser();
+							fc.setAcceptAllFileFilterUsed(false);
+							fc.setFileFilter(xmlFilter);
+							int returnVal = fc.showSaveDialog(window);
+							if (returnVal == JFileChooser.APPROVE_OPTION) {						
+								String filename = fc.getSelectedFile().toString();
+								
+								if (!filename.endsWith(".xml")) {
+									filename += ".xml";							
+								}
+								
+								BufferedWriter bWriter = null;
+								try {
+									bWriter = new BufferedWriter(new FileWriter(filename));
+									bWriter.write(xmlOutput);
+								} catch (IOException ex) {
+									logger.error("Cannot write to file", ex);
+								} finally {
+									if (bWriter != null) {
+										bWriter.close();
+										setDocumentLabel(true);
+									}
+								}
+							}
 						}
 					}
 				} catch (IOException e1) {
-					e1.printStackTrace();
+					logger.error("IOException", e1);
 				}
-
-				// TODO
-				/*if (true) {
-					setDocumentLabel(true);
-				} else {
-					setDocumentLabel(false);
-				}*/
-
 			}
 		});
 
