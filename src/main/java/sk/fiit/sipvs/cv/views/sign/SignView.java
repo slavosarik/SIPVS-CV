@@ -68,7 +68,7 @@ public class SignView {
 	public SignView() {
 		// Window
 		window = new JFrame();
-		window.setTitle("Validate XML");
+		window.setTitle("Sign XML");
 		window.setBounds(100, 100, 1000, 450);
 		window.getContentPane().setLayout(null);
 
@@ -219,6 +219,7 @@ public class SignView {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				signBtn.setEnabled(false);
+				setDocumentLabel(false);
 
 				if (xmlFile != null && xsdFile != null && xslFile != null) {
 
@@ -317,6 +318,7 @@ public class SignView {
 									if (bWriter != null) {
 										bWriter.close();
 										setDocumentLabel(true);
+										signBtn.setEnabled(false);
 									}
 								}
 							}
