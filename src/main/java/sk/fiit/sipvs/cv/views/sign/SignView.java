@@ -7,6 +7,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -27,6 +31,8 @@ import org.apache.logging.log4j.Logger;
 
 import sk.fiit.sipvs.cv.controllers.MainClass;
 import sk.fiit.sipvs.cv.controllers.TransformController;
+import sk.fiit.sipvs.cv.models.DSigAppWrapper;
+import sk.fiit.sipvs.cv.models.DSigAppXmlPluginWrapper;
 
 public class SignView {
 
@@ -251,13 +257,49 @@ public class SignView {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				// Podpisovanie
+				DSigAppWrapper ditecApp;
+				DSigAppXmlPluginWrapper ditecXML;
 
-				// TODO funkcia pre podpis
-				if (true) {
+				try {
+					ditecApp = new DSigAppWrapper();
+					ditecXML = new DSigAppXmlPluginWrapper();
+
+					// Vytvorenie XML objektu
+					Object xmlObject = ditecXML.CreateObject("aaa", "Pokus",
+							readFile(xmlFile.getAbsolutePath()),
+							readFile(xsdFile.getAbsolutePath()),
+							"", "http://www.w3.org/2001/XMLSchema",
+							readFile(xslFile.getAbsolutePath()), "http://www.w3.org/1999/XSL/Transform");
+					System.out.println(ditecXML.getErrorMessage());
+					
+					// Vlozenie XML objektu
+					int addRes = ditecApp.AddObject(xmlObject);
+					if (addRes != 0) {
+						System.out.println(ditecApp.getErrorMessage());
+						System.out.println(addRes);
+					} else {
+						// Podpisanie
+						int signRes = ditecApp.Sign("bbb", "sha256", "urn:oid:1.3.158.36061701.1.2.1");
+
+						if (signRes != 0) {
+							System.out.println(signRes);
+							System.out.println(ditecApp.getErrorMessage());
+						} else {
+							// String xmlOutput = ditecApp.getSignedXmlWithEnvelope();
+							// TODO: Save
+						}
+					}
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+
+				// TODO
+				/*if (true) {
 					setDocumentLabel(true);
 				} else {
 					setDocumentLabel(false);
-				}
+				}*/
 
 			}
 		});
@@ -303,6 +345,19 @@ public class SignView {
 		window.repaint();
 	}
 
+	private String readFile(String path) {
+		byte[] encoded;
+
+		try {
+			encoded = Files.readAllBytes(Paths.get(path));
+		} catch (IOException e) {
+			e.printStackTrace();
+			return "";
+		}
+
+		return new String(encoded, Charset.defaultCharset());	
+	}
+	
 	private void setDocumentLabel(Boolean isSigned) {
 		if (isSigned) {
 			documentSignedLabel.setText("Document is signed.");
