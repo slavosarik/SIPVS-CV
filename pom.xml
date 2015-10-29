@@ -30,6 +30,13 @@
 			<artifactId>jacob</artifactId>
 			<version>1.14.3</version>
 		</dependency>
+
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcprov-jdk15on</artifactId>
+			<version>1.53</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>
@@ -82,8 +89,8 @@
 				<configuration>
 					<encoding>UTF-8</encoding>
 					<nonFilteredFileExtensions>
-			            <nonFilteredFileExtension>dll</nonFilteredFileExtension>
-			        </nonFilteredFileExtensions>
+						<nonFilteredFileExtension>dll</nonFilteredFileExtension>
+					</nonFilteredFileExtensions>
 				</configuration>
 			</plugin>
 			<plugin>
