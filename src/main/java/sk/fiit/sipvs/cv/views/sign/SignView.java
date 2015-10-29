@@ -42,6 +42,7 @@ public class SignView {
 	private static final String MISSING_XML_FILE_LOGGER = "Transformation error. Missing XML file.";
 	private static final String MISSING_XSD_FILE_LOGGER = "Transformation error. Missing XSD file.";
 	private static final String MISSING_XSL_FILE_LOGGER = "Transformation error. Missing XSL file.";
+	private static final int NUMBER_OF_FILES_TO_BE_SIGNED = 3;
 
 	private JFrame window;
 
@@ -269,57 +270,65 @@ public class SignView {
 					ditecXML = new DSigAppXmlPluginWrapper();
 
 					// Create XML object
-					Object xmlObject = ditecXML.CreateObject("id1", "Dokument",
-							readFile(xmlFile.getAbsolutePath()),
-							readFile(xsdFile.getAbsolutePath()),
-							"", "http://www.w3.org/2001/XMLSchema",
-							readFile(xslFile.getAbsolutePath()),
-							"http://www.w3.org/1999/XSL/Transform");
+					for (int i = 0; i < NUMBER_OF_FILES_TO_BE_SIGNED; i++){
+						Object xmlObject = ditecXML.CreateObject("id" + i, "Dokument " + i,
+								readFile(xmlFile.getAbsolutePath()),
+								readFile(xsdFile.getAbsolutePath()),
+								"", "http://www.w3.org/2001/XMLSchema",
+								readFile(xslFile.getAbsolutePath()),
+								"http://www.w3.org/1999/XSL/Transform");
+						
+						if (xmlObject == null){
+							logger.error(ditecXML.getErrorMessage());
+							return;
 
-					logger.error(ditecXML.getErrorMessage());
-					
-					// Add XML object
-					int addRes = ditecApp.AddObject(xmlObject);
-					if (addRes != 0) {
-						logger.error(ditecApp.getErrorMessage());
-						logger.error(addRes);
-					} else {
-						// Sign
-						int signRes = ditecApp.Sign("id2", "sha256", "urn:oid:1.3.158.36061701.1.2.1");
+						}
 
-						if (signRes != 0) {
-							logger.error(signRes);
+						int addRes = ditecApp.AddObject(xmlObject);
+						
+						if (addRes != 0) {
 							logger.error(ditecApp.getErrorMessage());
-						} else {
-							logger.info("Successfully signed");
-							String xmlOutput = ditecApp.getSignedXmlWithEnvelope();
+							logger.error(addRes);
+							return;
+						}
+					}
+
+					// Sign
+					int signRes = ditecApp.Sign("FIIT_STU_Bratislava", "sha256", "urn:oid:1.3.158.36061701.1.2.1");
+
+					if (signRes != 0) {
+						logger.error(signRes);
+						logger.error(ditecApp.getErrorMessage());
+						return;
+					} else {
+						logger.info("Successfully signed");
+						String xmlOutput = ditecApp.getSignedXmlWithEnvelope();
+						
+						// Save file
+						final FileNameExtensionFilter xmlFilter = new FileNameExtensionFilter("XML files (.xml)", "xml");
+						
+						final JFileChooser fc = new JFileChooser();
+						fc.setAcceptAllFileFilterUsed(false);
+						fc.setFileFilter(xmlFilter);
+						int returnVal = fc.showSaveDialog(window);
+						if (returnVal == JFileChooser.APPROVE_OPTION) {						
+							String filename = fc.getSelectedFile().toString();
 							
-							// Save file
-							final FileNameExtensionFilter xmlFilter = new FileNameExtensionFilter("XML files (.xml)", "xml");
+							if (!filename.endsWith(".xml")) {
+								filename += ".xml";							
+							}
 							
-							final JFileChooser fc = new JFileChooser();
-							fc.setAcceptAllFileFilterUsed(false);
-							fc.setFileFilter(xmlFilter);
-							int returnVal = fc.showSaveDialog(window);
-							if (returnVal == JFileChooser.APPROVE_OPTION) {						
-								String filename = fc.getSelectedFile().toString();
-								
-								if (!filename.endsWith(".xml")) {
-									filename += ".xml";							
-								}
-								
-								BufferedWriter bWriter = null;
-								try {
-									bWriter = new BufferedWriter(new FileWriter(filename));
-									bWriter.write(xmlOutput);
-								} catch (IOException ex) {
-									logger.error("Cannot write to file", ex);
-								} finally {
-									if (bWriter != null) {
-										bWriter.close();
-										setDocumentLabel(true);
-										signBtn.setEnabled(false);
-									}
+							BufferedWriter bWriter = null;
+							try {
+								bWriter = new BufferedWriter(new FileWriter(filename));
+								bWriter.write(xmlOutput);
+							} catch (IOException ex) {
+								logger.error("Cannot write to file", ex);
+							} finally {
+								if (bWriter != null) {
+									bWriter.close();
+									setDocumentLabel(true);
+									signBtn.setEnabled(false);
 								}
 							}
 						}
