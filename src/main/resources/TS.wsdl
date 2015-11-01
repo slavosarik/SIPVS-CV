@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:tns="http://www.ditec.sk/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" targetNamespace="http://www.ditec.sk/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:types>
+    <s:schema elementFormDefault="qualified" targetNamespace="http://www.ditec.sk/">
+      <s:element name="GetTimestamp">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="dataB64" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetTimestampResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetTimestampResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+    </s:schema>
+  </wsdl:types>
+  <wsdl:message name="GetTimestampSoapIn">
+    <wsdl:part name="parameters" element="tns:GetTimestamp" />
+  </wsdl:message>
+  <wsdl:message name="GetTimestampSoapOut">
+    <wsdl:part name="parameters" element="tns:GetTimestampResponse" />
+  </wsdl:message>
+  <wsdl:portType name="TSSoap">
+    <wsdl:operation name="GetTimestamp">
+      <wsdl:input message="tns:GetTimestampSoapIn" />
+      <wsdl:output message="tns:GetTimestampSoapOut" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="TSSoap" type="tns:TSSoap">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="GetTimestamp">
+      <soap:operation soapAction="http://www.ditec.sk/GetTimestamp" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:binding name="TSSoap12" type="tns:TSSoap">
+    <soap12:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="GetTimestamp">
+      <soap12:operation soapAction="http://www.ditec.sk/GetTimestamp" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="TS">
+    <wsdl:port name="TSSoap" binding="tns:TSSoap">
+      <soap:address location="http://test.ditec.sk/timestampws/TS.asmx" />
+    </wsdl:port>
+    <wsdl:port name="TSSoap12" binding="tns:TSSoap12">
+      <soap12:address location="http://test.ditec.sk/timestampws/TS.asmx" />
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>
