@@ -5,7 +5,6 @@ import java.io.IOException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.asn1.tsp.TimeStampResp;
 import org.bouncycastle.crypto.digests.SHA1Digest;
 import org.bouncycastle.tsp.TSPAlgorithms;
 import org.bouncycastle.tsp.TSPException;
@@ -59,12 +58,17 @@ public class TSClient {
 		TimeStampToken timeStampToken = null;
 
 		try {
-			TimeStampResp resp = TimeStampResp.getInstance(responseByteData);
-			TimeStampResponse response = new TimeStampResponse(resp);
+			TimeStampResponse response = new TimeStampResponse(responseByteData);
 			timeStampToken = response.getTimeStampToken();
 
-			// response.validate(tsRequest);
+			logger.info("Request message imprint: " + tsRequest.getMessageImprintDigest());
+			logger.info("Response message imprint: " + timeStampToken.getTimeStampInfo().getMessageImprintDigest());
+
 			// TOTO NETUSIM PRECO NEJDE ZVALIDOVAT....
+			// Hladal som nieco suvisiace s "response for different message
+			// imprint digest", ale nenasiel som dovod, preco by nemali byt
+			// rovnake (pozri logger).
+			response.validate(tsRequest);
 
 			logger.info("Serial number: " + response.getTimeStampToken().getTimeStampInfo().getSerialNumber());
 			logger.info("TSA: " + response.getTimeStampToken().getTimeStampInfo().getTsa());
@@ -72,7 +76,7 @@ public class TSClient {
 
 			return response.getTimeStampToken();
 		} catch (TSPException | IOException e) {
-			logger.error("Timestamp error: ", e);
+			logger.error("Timestamp error: " + e);
 		}
 
 		return timeStampToken;
