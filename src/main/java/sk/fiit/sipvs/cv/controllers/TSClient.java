@@ -2,7 +2,6 @@ package sk.fiit.sipvs.cv.controllers;
 
 import java.io.IOException;
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.crypto.digests.SHA1Digest;
@@ -12,6 +11,7 @@ import org.bouncycastle.tsp.TimeStampRequest;
 import org.bouncycastle.tsp.TimeStampRequestGenerator;
 import org.bouncycastle.tsp.TimeStampResponse;
 import org.bouncycastle.tsp.TimeStampToken;
+import org.springframework.security.crypto.codec.Base64;
 
 import sk.ditec.TS;
 
@@ -38,28 +38,19 @@ public class TSClient {
 		}
 
 		// encoding byte array into base 64 array
-		byte[] encodedBaseArray = Base64.encodeBase64(requestBytes);
+		byte[] encodedBaseArray = Base64.encode(requestBytes);
 		String requestBase64StringData = new String(encodedBaseArray);
 		String responseBase64StringData = null;
-
-		try {
-
-			// send and receive data from ditec endpoint
-			TS timeStampClient = new TS();
-			logger.info("Requesting timestamp for: " + message);
-			logger.info("Request: " + requestBase64StringData);
-			responseBase64StringData = timeStampClient.getTSSoap().getTimestamp(requestBase64StringData);
-
-		} catch (Exception e) {
-			logger.error("SOAP error: No response to request: " + requestBase64StringData, e);
-		}
-
-		logger.info("Response: " + responseBase64StringData);
-		byte[] responseByteData = Base64.decodeBase64(responseBase64StringData.getBytes());
 
 		TimeStampToken timeStampToken = null;
 
 		try {
+			// send and receive data from ditec endpoint
+			logger.info("Requesting timestamp for: " + message);
+			responseBase64StringData = getTSAResponse(requestBase64StringData);
+
+			byte[] responseByteData = Base64.decode(responseBase64StringData.getBytes());
+
 			TimeStampResponse response = new TimeStampResponse(responseByteData);
 			timeStampToken = response.getTimeStampToken();
 
@@ -79,6 +70,8 @@ public class TSClient {
 			return response.getTimeStampToken();
 		} catch (TSPException | IOException e) {
 			logger.error("Timestamp error: " + e);
+		} catch (Exception e) {
+			logger.error("SOAP error: No response to request: " + requestBase64StringData, e);
 		}
 
 		return timeStampToken;
@@ -86,7 +79,7 @@ public class TSClient {
 	}
 
 	public byte[] getTimeStamp(String message) {
-		
+
 		byte[] byteMessage = message.getBytes();
 		SHA1Digest messageDigest = new SHA1Digest();
 		messageDigest.update(byteMessage, 0, byteMessage.length);
@@ -104,17 +97,15 @@ public class TSClient {
 		}
 
 		// encoding byte array into base 64 array
-		byte[] encodedBaseArray = Base64.encodeBase64(requestBytes);
+		byte[] encodedBaseArray = Base64.encode(requestBytes);
 		String requestBase64StringData = new String(encodedBaseArray);
 		String responseBase64StringData = null;
 
 		try {
 
 			// send and receive data from ditec endpoint
-			TS timeStampClient = new TS();
 			logger.info("Requesting timestamp for: " + message);
-			logger.info("Request: " + requestBase64StringData);
-			responseBase64StringData = timeStampClient.getTSSoap().getTimestamp(requestBase64StringData);
+			responseBase64StringData = getTSAResponse(requestBase64StringData);
 
 		} catch (Exception e) {
 			logger.error("SOAP error: No response to request: " + requestBase64StringData, e);
@@ -123,5 +114,24 @@ public class TSClient {
 		logger.info("Response: " + responseBase64StringData);
 
 		return responseBase64StringData.getBytes();
+	}
+
+	private String getTSAResponse(String request) {
+		String response = null;
+
+		// send and receive data from ditec endpoint
+		TS timeStampClient = new TS();
+		logger.info("Request: " + request);
+		response = timeStampClient.getTSSoap().getTimestamp(request);
+
+		return response;
+	}
+
+	public static void main(String[] args) {
+		String message = "hello ditec";
+
+		TSClient client = new TSClient();
+		TimeStampToken token = client.getTimeStampToken(message);
+		System.out.println(token.getTimeStampInfo().getGenTime());
 	}
 }
