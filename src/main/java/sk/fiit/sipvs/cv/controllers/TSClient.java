@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import javax.xml.soap.SOAPException;
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.crypto.digests.SHA1Digest;
@@ -14,6 +13,7 @@ import org.bouncycastle.tsp.TimeStampRequest;
 import org.bouncycastle.tsp.TimeStampRequestGenerator;
 import org.bouncycastle.tsp.TimeStampResponse;
 import org.bouncycastle.tsp.TimeStampToken;
+import org.springframework.security.crypto.codec.Base64;
 
 import sk.ditec.TS;
 
@@ -25,11 +25,11 @@ public class TSClient {
 
 		SHA1Digest messageDigest = new SHA1Digest();
 		messageDigest.update(byteMessage, 0, byteMessage.length);
-		byte[] requestDigest = new byte[32];
-		messageDigest.doFinal(requestDigest, 0);
+		byte[] reuqestDigest = new byte[32];
+		messageDigest.doFinal(reuqestDigest, 0);
 
 		TimeStampRequestGenerator tsReqGenerator = new TimeStampRequestGenerator();
-		TimeStampRequest tsRequest = tsReqGenerator.generate(TSPAlgorithms.SHA256, requestDigest);
+		TimeStampRequest tsRequest = tsReqGenerator.generate(TSPAlgorithms.SHA256, reuqestDigest);
 
 		byte[] requestBytes = null;
 		try {
@@ -39,7 +39,7 @@ public class TSClient {
 		}
 
 		// encoding byte array into base 64 array
-		byte[] encodedBaseArray = Base64.encodeBase64(requestBytes);
+		byte[] encodedBaseArray = Base64.encode(requestBytes);
 		String requestBase64StringData = new String(encodedBaseArray);
 		String responseBase64StringData = null;
 
@@ -49,7 +49,7 @@ public class TSClient {
 			// send and receive data from ditec endpoint
 			responseBase64StringData = getTSAResponse(requestBase64StringData);
 
-			byte[] responseByteData = Base64.decodeBase64(responseBase64StringData.getBytes());
+			byte[] responseByteData = Base64.decode(responseBase64StringData.getBytes());
 
 			TimeStampResponse response = new TimeStampResponse(responseByteData);
 			timeStampToken = response.getTimeStampToken();
