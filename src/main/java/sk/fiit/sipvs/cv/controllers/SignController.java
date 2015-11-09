@@ -153,7 +153,7 @@ public class SignController {
 			transformer.transform(domSource, result);
 			return result.getWriter().toString();
 		} catch (ParserConfigurationException e) {
-			// Catch all the exceptions separatelly. You know, for the future.
+			// Catch all the exceptions separately. You know, for the future.
 			logger.error(e.getLocalizedMessage());
 		} catch (SAXException e) {
 			logger.error(e.getLocalizedMessage());
