@@ -2,6 +2,8 @@ package sk.fiit.sipvs.cv.controllers;
 
 import java.io.IOException;
 
+import javax.xml.soap.SOAPException;
+
 import org.apache.commons.codec.binary.Base64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,11 +25,11 @@ public class TSClient {
 
 		SHA1Digest messageDigest = new SHA1Digest();
 		messageDigest.update(byteMessage, 0, byteMessage.length);
-		byte[] reuqestDigest = new byte[32];
-		messageDigest.doFinal(reuqestDigest, 0);
+		byte[] requestDigest = new byte[32];
+		messageDigest.doFinal(requestDigest, 0);
 
 		TimeStampRequestGenerator tsReqGenerator = new TimeStampRequestGenerator();
-		TimeStampRequest tsRequest = tsReqGenerator.generate(TSPAlgorithms.SHA256, reuqestDigest);
+		TimeStampRequest tsRequest = tsReqGenerator.generate(TSPAlgorithms.SHA256, requestDigest);
 
 		byte[] requestBytes = null;
 		try {
@@ -41,23 +43,14 @@ public class TSClient {
 		String requestBase64StringData = new String(encodedBaseArray);
 		String responseBase64StringData = null;
 
-		try {
-
-			// send and receive data from ditec endpoint
-			TS timeStampClient = new TS();
-			logger.info("Request: " + requestBase64StringData);
-			responseBase64StringData = timeStampClient.getTSSoap().getTimestamp(requestBase64StringData);
-
-		} catch (Exception e) {
-			logger.error("SOAP error: No response to request: " + requestBase64StringData, e);
-		}
-
-		logger.info("Response: " + responseBase64StringData);
-		byte[] responseByteData = Base64.decodeBase64(responseBase64StringData.getBytes());
-
 		TimeStampToken timeStampToken = null;
 
 		try {
+			// send and receive data from ditec endpoint
+			responseBase64StringData = getTSAResponse(requestBase64StringData);
+
+			byte[] responseByteData = Base64.decodeBase64(responseBase64StringData.getBytes());
+
 			TimeStampResponse response = new TimeStampResponse(responseByteData);
 			timeStampToken = response.getTimeStampToken();
 
@@ -77,10 +70,33 @@ public class TSClient {
 			return response.getTimeStampToken();
 		} catch (TSPException | IOException e) {
 			logger.error("Timestamp error: " + e);
+
+		} catch (Exception e) {
+			logger.error("SOAP error: No response to request: " + requestBase64StringData, e);
 		}
 
 		return timeStampToken;
 
+	}
+
+	private String getTSAResponse(String request) {
+		String response = null;
+
+		// send and receive data from ditec endpoint
+		TS timeStampClient = new TS();
+		logger.info("Request: " + request);
+		response = timeStampClient.getTSSoap().getTimestamp(request);
+
+		return response;
+	}
+	
+	public static void main(String[] args) {
+		String message = "hello ditec";
+		byte[] byteMessage = message.getBytes();
+
+		TSClient client = new TSClient();
+		TimeStampToken token = client.getTimeStampToken(byteMessage);
+		System.out.println(token.getTimeStampInfo().getGenTime());
 	}
 
 }
