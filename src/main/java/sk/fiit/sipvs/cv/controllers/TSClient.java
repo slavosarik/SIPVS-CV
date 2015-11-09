@@ -17,10 +17,11 @@ import sk.ditec.TS;
 
 public class TSClient {
 
-	final Logger logger = LogManager.getLogger(MainClass.class.getName());
+	final Logger logger = LogManager.getLogger(TSClient.class.getName());
 
-	public TimeStampToken getTimeStampToken(byte[] byteMessage) {
+	public TimeStampToken getTimeStampToken(String message) {
 
+		byte[] byteMessage = message.getBytes();
 		SHA1Digest messageDigest = new SHA1Digest();
 		messageDigest.update(byteMessage, 0, byteMessage.length);
 		byte[] reuqestDigest = new byte[32];
@@ -45,6 +46,7 @@ public class TSClient {
 
 			// send and receive data from ditec endpoint
 			TS timeStampClient = new TS();
+			logger.info("Requesting timestamp for: " + message);
 			logger.info("Request: " + requestBase64StringData);
 			responseBase64StringData = timeStampClient.getTSSoap().getTimestamp(requestBase64StringData);
 
@@ -83,4 +85,43 @@ public class TSClient {
 
 	}
 
+	public byte[] getTimeStamp(String message) {
+		
+		byte[] byteMessage = message.getBytes();
+		SHA1Digest messageDigest = new SHA1Digest();
+		messageDigest.update(byteMessage, 0, byteMessage.length);
+		byte[] reuqestDigest = new byte[32];
+		messageDigest.doFinal(reuqestDigest, 0);
+
+		TimeStampRequestGenerator tsReqGenerator = new TimeStampRequestGenerator();
+		TimeStampRequest tsRequest = tsReqGenerator.generate(TSPAlgorithms.SHA256, reuqestDigest);
+
+		byte[] requestBytes = null;
+		try {
+			requestBytes = tsRequest.getEncoded();
+		} catch (IOException e) {
+			logger.error("Failed to encode timeStamp request");
+		}
+
+		// encoding byte array into base 64 array
+		byte[] encodedBaseArray = Base64.encodeBase64(requestBytes);
+		String requestBase64StringData = new String(encodedBaseArray);
+		String responseBase64StringData = null;
+
+		try {
+
+			// send and receive data from ditec endpoint
+			TS timeStampClient = new TS();
+			logger.info("Requesting timestamp for: " + message);
+			logger.info("Request: " + requestBase64StringData);
+			responseBase64StringData = timeStampClient.getTSSoap().getTimestamp(requestBase64StringData);
+
+		} catch (Exception e) {
+			logger.error("SOAP error: No response to request: " + requestBase64StringData, e);
+		}
+
+		logger.info("Response: " + responseBase64StringData);
+
+		return responseBase64StringData.getBytes();
+	}
 }

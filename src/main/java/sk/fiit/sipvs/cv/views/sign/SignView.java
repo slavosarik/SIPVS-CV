@@ -56,6 +56,7 @@ public class SignView {
 	private JTextArea textArea;
 
 	private JButton signBtn;
+	private JButton signBtnTS;
 
 	private Logger logger = LogManager.getLogger(SignView.class.getName());
 
@@ -96,8 +97,7 @@ public class SignView {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 
-				// Disable Sign button
-				signBtn.setEnabled(false);
+				disableSignButtons(true);
 
 				// Set current directory to last opened directory
 				xmlFileChooser.setCurrentDirectory(lastDirectory);
@@ -135,8 +135,7 @@ public class SignView {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 
-				// Disable Sign button
-				signBtn.setEnabled(false);
+				disableSignButtons(true);
 
 				// Set current directory to last opened directory
 				xsdFileChooser.setCurrentDirectory(lastDirectory);
@@ -174,8 +173,7 @@ public class SignView {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 
-				// Disable Sign button
-				signBtn.setEnabled(false);
+				disableSignButtons(true);
 
 				// Set current directory to last opened directory
 				xslFileChooser.setCurrentDirectory(lastDirectory);
@@ -206,13 +204,13 @@ public class SignView {
 		window.getContentPane().add(showLabel);
 
 		JButton showBtn = new JButton("Prepare document");
-		showBtn.setBounds(32, 243, 150, 24);
+		showBtn.setBounds(32, 20 + 7 * 24 + 13 * MainClass.VERTICAL_SPACING, 150, 24);
 		window.getContentPane().add(showBtn);
 		showBtn.addActionListener(new ActionListener() {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				signBtn.setEnabled(false);
+				disableSignButtons(true);
 				setDocumentLabel(false);
 
 				if (xmlFile != null && xsdFile != null && xslFile != null) {
@@ -222,7 +220,7 @@ public class SignView {
 
 					try {
 						textArea.setText(tc.transform(xmlFile, xslFile, null));
-						signBtn.setEnabled(true);
+						disableSignButtons(false);
 						logger.info("Transformation finished.");
 					} catch (TransformerException e1) {
 						logger.error("An error occured during transformation", e1);
@@ -247,7 +245,7 @@ public class SignView {
 
 		// Sign XML
 		signBtn = new JButton("Sign");
-		signBtn.setBounds(980 - 32 - 100 - 100 - MainClass.HORIZONTAL_SPACING / 2, 410 - 20 - 24, 100, 24);
+		signBtn.setBounds(980 - 32 - 2 * 100 - 150 - 2 * MainClass.HORIZONTAL_SPACING, 410 - 20 - 24, 100, 24);
 		signBtn.setEnabled(false);
 		window.getContentPane().add(signBtn);
 		signBtn.addActionListener(new ActionListener() {
@@ -269,7 +267,40 @@ public class SignView {
 
 					if (sc.saveDocument(xmlOutput, filename)) {
 						setDocumentLabel(true);
-						signBtn.setEnabled(false);
+						disableSignButtons(true);
+					} else {
+						JOptionPane.showMessageDialog(window, CANNOT_SAVE_FILE, MainClass.SAVE_ERROR,
+								JOptionPane.ERROR_MESSAGE);
+					}
+				}
+			}
+		});
+
+		// Sign XML + add Timestamp
+		signBtnTS = new JButton("Sign with Timestamp");
+		signBtnTS.setBounds(980 - 32 - 100 - 150 - MainClass.HORIZONTAL_SPACING, 410 - 20 - 24, 150, 24);
+		signBtnTS.setEnabled(false);
+		window.getContentPane().add(signBtnTS);
+		signBtnTS.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				SignController sc = new SignController();
+				String xmlOutput = sc.signDocumentWithTimeStamp(xmlFile, xsdFile, xslFile);
+
+				// Save file
+				final FileNameExtensionFilter xmlFilter = new FileNameExtensionFilter("XML files (.xml)", "xml");
+
+				final JFileChooser fc = new JFileChooser();
+				fc.setAcceptAllFileFilterUsed(false);
+				fc.setFileFilter(xmlFilter);
+				int returnVal = fc.showSaveDialog(window);
+				if (returnVal == JFileChooser.APPROVE_OPTION) {
+					String filename = fc.getSelectedFile().toString();
+
+					if (sc.saveDocument(xmlOutput, filename)) {
+						setDocumentLabel(true);
+						disableSignButtons(true);
 					} else {
 						JOptionPane.showMessageDialog(window, CANNOT_SAVE_FILE, MainClass.SAVE_ERROR,
 								JOptionPane.ERROR_MESSAGE);
@@ -326,6 +357,16 @@ public class SignView {
 		} else {
 			documentSignedLabel.setText("Document is not signed.");
 			documentSignedLabel.setForeground(Color.RED);
+		}
+	}
+
+	private void disableSignButtons(Boolean disable) {
+		if (disable) {
+			signBtn.setEnabled(false);
+			signBtnTS.setEnabled(false);
+		} else {
+			signBtn.setEnabled(true);
+			signBtnTS.setEnabled(true);
 		}
 	}
 }
