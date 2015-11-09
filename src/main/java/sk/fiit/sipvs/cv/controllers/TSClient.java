@@ -75,7 +75,6 @@ public class TSClient {
 		}
 
 		return timeStampToken;
-
 	}
 
 	public byte[] getTimeStamp(String message) {
