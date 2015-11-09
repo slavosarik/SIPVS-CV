@@ -6,13 +6,7 @@ import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -32,9 +26,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import sk.fiit.sipvs.cv.controllers.MainClass;
+import sk.fiit.sipvs.cv.controllers.SignController;
 import sk.fiit.sipvs.cv.controllers.TransformController;
-import sk.fiit.sipvs.cv.models.DSigAppWrapper;
-import sk.fiit.sipvs.cv.models.DSigAppXmlPluginWrapper;
 
 public class SignView {
 
@@ -42,7 +35,7 @@ public class SignView {
 	private static final String MISSING_XML_FILE_LOGGER = "Transformation error. Missing XML file.";
 	private static final String MISSING_XSD_FILE_LOGGER = "Transformation error. Missing XSD file.";
 	private static final String MISSING_XSL_FILE_LOGGER = "Transformation error. Missing XSL file.";
-	private static final int NUMBER_OF_FILES_TO_BE_SIGNED = 3;
+	private static final String CANNOT_SAVE_FILE = "File cannot be saved. Please try again.";
 
 	private JFrame window;
 
@@ -261,80 +254,26 @@ public class SignView {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				// Signing
-				DSigAppWrapper ditecApp;
-				DSigAppXmlPluginWrapper ditecXML;
+				SignController sc = new SignController();
+				String xmlOutput = sc.signDocument(xmlFile, xsdFile, xslFile);
 
-				try {
-					ditecApp = new DSigAppWrapper();
-					ditecXML = new DSigAppXmlPluginWrapper();
+				// Save file
+				final FileNameExtensionFilter xmlFilter = new FileNameExtensionFilter("XML files (.xml)", "xml");
 
-					// Create XML object
-					for (int i = 0; i < NUMBER_OF_FILES_TO_BE_SIGNED; i++){
-						Object xmlObject = ditecXML.CreateObject("id" + i, "Dokument " + i,
-								readFile(xmlFile.getAbsolutePath()),
-								readFile(xsdFile.getAbsolutePath()),
-								"", "http://www.w3.org/2001/XMLSchema",
-								readFile(xslFile.getAbsolutePath()),
-								"http://www.w3.org/1999/XSL/Transform");
-						
-						if (xmlObject == null){
-							logger.error(ditecXML.getErrorMessage());
-							return;
+				final JFileChooser fc = new JFileChooser();
+				fc.setAcceptAllFileFilterUsed(false);
+				fc.setFileFilter(xmlFilter);
+				int returnVal = fc.showSaveDialog(window);
+				if (returnVal == JFileChooser.APPROVE_OPTION) {
+					String filename = fc.getSelectedFile().toString();
 
-						}
-
-						int addRes = ditecApp.AddObject(xmlObject);
-						
-						if (addRes != 0) {
-							logger.error(ditecApp.getErrorMessage());
-							logger.error(addRes);
-							return;
-						}
-					}
-
-					// Sign
-					int signRes = ditecApp.Sign("FIIT_STU_Bratislava", "sha256", "urn:oid:1.3.158.36061701.1.2.1");
-
-					if (signRes != 0) {
-						logger.error(signRes);
-						logger.error(ditecApp.getErrorMessage());
-						return;
+					if (sc.saveDocument(xmlOutput, filename)) {
+						setDocumentLabel(true);
+						signBtn.setEnabled(false);
 					} else {
-						logger.info("Successfully signed");
-						String xmlOutput = ditecApp.getSignedXmlWithEnvelope();
-						
-						// Save file
-						final FileNameExtensionFilter xmlFilter = new FileNameExtensionFilter("XML files (.xml)", "xml");
-						
-						final JFileChooser fc = new JFileChooser();
-						fc.setAcceptAllFileFilterUsed(false);
-						fc.setFileFilter(xmlFilter);
-						int returnVal = fc.showSaveDialog(window);
-						if (returnVal == JFileChooser.APPROVE_OPTION) {						
-							String filename = fc.getSelectedFile().toString();
-							
-							if (!filename.endsWith(".xml")) {
-								filename += ".xml";							
-							}
-							
-							BufferedWriter bWriter = null;
-							try {
-								bWriter = new BufferedWriter(new FileWriter(filename));
-								bWriter.write(xmlOutput);
-							} catch (IOException ex) {
-								logger.error("Cannot write to file", ex);
-							} finally {
-								if (bWriter != null) {
-									bWriter.close();
-									setDocumentLabel(true);
-									signBtn.setEnabled(false);
-								}
-							}
-						}
+						JOptionPane.showMessageDialog(window, CANNOT_SAVE_FILE, MainClass.SAVE_ERROR,
+								JOptionPane.ERROR_MESSAGE);
 					}
-				} catch (IOException e1) {
-					logger.error("IOException", e1);
 				}
 			}
 		});
@@ -380,19 +319,6 @@ public class SignView {
 		window.repaint();
 	}
 
-	private String readFile(String path) {
-		byte[] encoded;
-
-		try {
-			encoded = Files.readAllBytes(Paths.get(path));
-		} catch (IOException e) {
-			e.printStackTrace();
-			return "";
-		}
-
-		return new String(encoded, Charset.defaultCharset());	
-	}
-	
 	private void setDocumentLabel(Boolean isSigned) {
 		if (isSigned) {
 			documentSignedLabel.setText("Document is signed.");

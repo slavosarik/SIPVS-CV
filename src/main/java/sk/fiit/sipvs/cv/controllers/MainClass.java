@@ -29,6 +29,7 @@ public class MainClass {
 	// GUI strings
 	public static final String MISSING_FILE = "Missing file";
 	public static final String NO_FILE_CHOSEN = "No file chosen";
+	public static final String SAVE_ERROR = "File not saved";
 
 	private static FormView formView;
 	private static TransformView transformView;
