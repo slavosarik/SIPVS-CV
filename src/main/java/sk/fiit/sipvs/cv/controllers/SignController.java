@@ -31,7 +31,8 @@ public class SignController {
 			ditecXML = new DSigAppXmlPluginWrapper();
 
 			// Create XML object
-			// Index intentionally starts at 1 (for human readability in Ditec Signer)
+			// Index intentionally starts at 1 (for human readability in Ditec
+			// Signer)
 			for (int i = 1; i <= NUMBER_OF_FILES_TO_BE_SIGNED; i++) {
 				Object xmlObject = ditecXML.CreateObject("id" + i, "CV " + i, readFile(xmlFile.getAbsolutePath()),
 						readFile(xsdFile.getAbsolutePath()), "", "http://www.w3.org/2001/XMLSchema",
@@ -40,7 +41,6 @@ public class SignController {
 				if (xmlObject == null) {
 					logger.error(ditecXML.getErrorMessage());
 					return null;
-
 				}
 
 				int addRes = ditecApp.AddObject(xmlObject);
@@ -69,7 +69,7 @@ public class SignController {
 
 		return xmlOutput;
 	}
-	
+
 	public Boolean saveDocument(String document, String filename) {
 		if (!filename.endsWith(".xml")) {
 			filename += ".xml";
@@ -79,7 +79,7 @@ public class SignController {
 		try {
 			bWriter = new BufferedWriter(new FileWriter(filename));
 			bWriter.write(document);
-			return true;			
+			return true;
 		} catch (IOException ex) {
 			logger.error("Cannot write to file", ex);
 		} finally {
@@ -88,10 +88,10 @@ public class SignController {
 					bWriter.close();
 				} catch (IOException e1) {
 					e1.printStackTrace();
-				}							
+				}
 			}
 		}
-		
+
 		return false;
 	}
 
@@ -106,5 +106,5 @@ public class SignController {
 		}
 
 		return new String(encoded, Charset.defaultCharset());
-	}	
+	}
 }
