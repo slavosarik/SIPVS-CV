@@ -36,6 +36,8 @@ import sk.fiit.sipvs.cv.models.DSigAppXmlPluginWrapper;
 public class SignController {
 
 	private static final int NUMBER_OF_FILES_TO_BE_SIGNED = 1;
+	private static final String SCHEMA_URL_LOCATION = "https://www.example.com/biography_schema.xsd";
+	private static final String TRANSFORMATION_URL_LOCATION = "https://www.example.com/cv-text1.xsd";
 
 	private Logger logger = LogManager.getLogger(SignController.class.getName());
 
@@ -54,8 +56,8 @@ public class SignController {
 			// Signer)
 			for (int i = 1; i <= NUMBER_OF_FILES_TO_BE_SIGNED; i++) {
 				Object xmlObject = ditecXML.CreateObject("id" + i, "CV " + i, readFile(xmlFile.getAbsolutePath()),
-						readFile(xsdFile.getAbsolutePath()), "", "http://www.w3.org/2001/XMLSchema",
-						readFile(xslFile.getAbsolutePath()), "http://www.w3.org/1999/XSL/Transform");
+						readFile(xsdFile.getAbsolutePath()), "", SCHEMA_URL_LOCATION,
+						readFile(xslFile.getAbsolutePath()), TRANSFORMATION_URL_LOCATION);
 
 				if (xmlObject == null) {
 					logger.error(ditecXML.getErrorMessage());
