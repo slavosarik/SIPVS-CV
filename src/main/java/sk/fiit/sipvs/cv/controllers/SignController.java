@@ -133,10 +133,10 @@ public class SignController {
 				return null;
 			}
 
-			TSClient tsClient = new TSClient();
-			byte[] timestamp = tsClient.getTimeStampToken(signatureValue.getTextContent());
+			TSClient tsClient = new TSClient();			
+			String timestamp = tsClient.getTimeStamp(signatureValue.getTextContent());
 
-			Text signatureNode = document.createTextNode(new String(timestamp));
+			Text signatureNode = document.createTextNode(timestamp);
 			encapsulatedTimeStamp.appendChild(signatureNode);
 
 			qualifyingProperties.appendChild(unsignedProperties);
@@ -204,7 +204,6 @@ public class SignController {
 
 		String output = sc.signDocumentWithTimeStamp(new File("xml_examples/valid_example.xml"),
 				new File("xml_examples/biography_schema.xsd"), new File("xml_examples/cv-text1.xsl"));
-
 		
 		sc.saveDocument(output, "xml_examples/timestamp.xml");		
 	}
