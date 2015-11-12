@@ -134,7 +134,7 @@ public class SignController {
 			}
 
 			TSClient tsClient = new TSClient();			
-			String timestamp = tsClient.getTimeStamp(signatureValue.getTextContent());
+			String timestamp = tsClient.getTimeStampTokenBase64(signatureValue.getTextContent());
 
 			Text signatureNode = document.createTextNode(timestamp);
 			encapsulatedTimeStamp.appendChild(signatureNode);

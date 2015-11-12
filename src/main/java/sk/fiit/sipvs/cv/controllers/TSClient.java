@@ -35,9 +35,11 @@ public class TSClient {
 		return timeStampBase64;
 	}
 
-	public TimeStampToken getTimeStampToken(String timeStampBase64) {
+	public TimeStampToken getTimeStampToken(String message) {
 
 		TimeStampToken timeStampToken = null;
+		String timeStampBase64 = getTimeStamp(message);
+		
 		byte[] responseByteData = Base64.decode(timeStampBase64.getBytes());
 
 		try {
@@ -53,13 +55,25 @@ public class TSClient {
 
 		return timeStampToken;
 	}
+	
+	public String getTimeStampTokenBase64(String message) {
+		
+		TimeStampToken timeStampToken = getTimeStampToken(message);
+		
+		try {			
+			return new String(Base64.encode(timeStampToken.getEncoded()));
+		} catch (IOException e) {
+			logger.error("Cannot encode TimeStamp token: " + e.getLocalizedMessage());
+		}
+		
+		return null;
+	}
 
 	public static void main(String[] args) {
 		String message = "hello ditec";
 		String messageBase64 = new String(Base64.encode(message.getBytes()));
 
-		TSClient client = new TSClient();
-		String timeStampBase64 = client.getTimeStamp(messageBase64);
-		client.getTimeStampToken(timeStampBase64);	
+		TSClient client = new TSClient();		
+		client.getTimeStampToken(messageBase64);	
 	}
 }
