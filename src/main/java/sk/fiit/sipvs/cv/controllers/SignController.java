@@ -118,14 +118,11 @@ public class SignController {
 			Element unsignedProperties = document.createElement("xades:UnsignedProperties");
 			Element unsignedSignatureProperties = document.createElement("xades:UnsignedSignatureProperties");
 			Element signatureTimestamp = document.createElement("xades:SignatureTimeStamp");
-			Element canonMethod = document.createElement("ds:CanonicalizationMethod");
-			canonMethod.setAttribute("Algorithm", "http://www.w3.org/TR/2001/REC-xml-c14n-20010315");
 			Element encapsulatedTimeStamp = document.createElement("xades:EncapsulatedTimeStamp");
 
 			// Priradenie podelementov
 			unsignedProperties.appendChild(unsignedSignatureProperties);
 			unsignedSignatureProperties.appendChild(signatureTimestamp);
-			signatureTimestamp.appendChild(canonMethod);
 			signatureTimestamp.appendChild(encapsulatedTimeStamp);
 
 			// Ziskanie samotnej peciatky a vlozenie do dokumentu
@@ -137,7 +134,7 @@ public class SignController {
 			}
 
 			TSClient tsClient = new TSClient();
-			byte[] timestamp = tsClient.getTimeStamp(signatureValue.getTextContent());
+			byte[] timestamp = tsClient.getTimeStampToken(signatureValue.getTextContent());
 
 			Text signatureNode = document.createTextNode(new String(timestamp));
 			encapsulatedTimeStamp.appendChild(signatureNode);
