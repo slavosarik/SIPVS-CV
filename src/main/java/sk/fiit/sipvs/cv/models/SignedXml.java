@@ -32,6 +32,11 @@ public class SignedXml {
 	private static final String CANONICALIZATION_XPATH = "//DataEnvelope/*[name()='ds:Signature']/*[name()='ds:SignedInfo']/*[name()='ds:CanonicalizationMethod']";
 	private static final String SIGNATURE_XPATH = "//DataEnvelope/*[name()='ds:Signature']/*[name()='ds:SignedInfo']/*[name()='ds:SignatureMethod']";
 	
+	private static final String REFERENCE_XPATH = "//DataEnvelope/*[name()='ds:Signature']/*[name()='ds:SignedInfo']/*[name()='ds:Reference']";
+	private static final String TRANSFORM_XPATH = "*[name()='ds:Transforms']/*[name()='ds:Transform']";
+	private static final String DIGEST_XPATH = "*[name()='ds:DigestMethod']";
+	
+	
 	// Xades ZEP 4.3.1.1
 	private static final Set<String> CANONICALIZATION_METHODS = new HashSet<String>(Arrays.asList(
 			new String[] {"http://www.w3.org/TR/2001/REC-xml-c14n-20010315"}
@@ -41,13 +46,21 @@ public class SignedXml {
 	private static final Set<String> SIGNATURE_METHODS = new HashSet<String>(Arrays.asList(
 			new String[] {"dsa-sha1", "rsa-sha1", "rsa-sha256", "rsa-sha384", "rsa-sha512"}
 	));
+
+	// Xades ZEP 4.3.1.3.1
+	private static final Set<String> TRANSFORM_METHODS = new HashSet<String>(Arrays.asList(
+			new String[] {"http://www.w3.org/TR/2001/REC-xml-c14n-20010315"}
+	));
+
+	// Xades ZEP 4.5
+	private static final Set<String> DIGEST_METHODS = new HashSet<String>(Arrays.asList(
+			new String[] {"sha1", "sha224", "sha256", "sha384", "sha512"}
+	));
 	
 	private Document doc;
 	private Logger logger = LogManager.getLogger(SignedXml.class.getName());
 
 	private XPath xpath;
-	private XPathExpression xPathCanonicalizationMethod;
-	private XPathExpression xPathSignatureMethod;
 	
 	public SignedXml(File xmlFile) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException{
 		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -57,7 +70,6 @@ public class SignedXml {
 		xpath = XPathFactory.newInstance().newXPath();
 		
 		xpath.setNamespaceContext(getNameSpaceContext());
-		compileXPathExpressions();
 		
 		doc = dBuilder.parse(xmlFile);
 		logger.info(String.format("File '%s' was sucessfully parsed.", xmlFile.getName()));
@@ -84,16 +96,11 @@ public class SignedXml {
 		    }
 		};
 	}
-	
-	private void compileXPathExpressions() throws XPathExpressionException {
-		xPathCanonicalizationMethod = xpath.compile(CANONICALIZATION_XPATH);
-		xPathSignatureMethod = xpath.compile(SIGNATURE_XPATH);
-		// xpath_xmls_ds = (XPathExpression) xpath.compile("/xzep:DataEnvelope/");
-	}
-	
+		
 	public void verify() throws SignVerificationException, XPathExpressionException {
 		verifyXmlnsAttributes();
 		verifySignatureAlgorithms();
+		verifyTransformAndDigest();
 	}
 	
 	/*
@@ -113,7 +120,6 @@ public class SignedXml {
 					throw new SignVerificationException(String.format("Attribute 'xmlns:ds' is missing in '%s' element.", item.getNodeName()));
 				}
 			}
-			
         }
 	}
 	
@@ -122,18 +128,49 @@ public class SignedXml {
 	 * z podporovaných algoritmov pre dané elementy podľa profilu XAdES_ZEP
 	 */
 	private void verifySignatureAlgorithms() throws SignVerificationException, XPathExpressionException {
-		logger.debug("//xzep:DataEnvelope/*[name()='ds:Signature']/*[name()='ds:SignedInfo']/*[name()='ds:CanonicalizationMethod']");
-		
-		// Node node = (Node) xpath.evaluate("//xzep:DataEnvelope/*[name()='ds:Signature']/*[name()='ds:SignedInfo']/*[name()='ds:CanonicalizationMethod']", doc, XPathConstants.NODE);
-		Element item = (Element) xPathCanonicalizationMethod.evaluate(doc, XPathConstants.NODE);
-		if (!CANONICALIZATION_METHODS.contains(item.getAttribute("Algorithm"))){
+
+		Element item = (Element) xpath.compile(CANONICALIZATION_XPATH).evaluate(doc, XPathConstants.NODE);
+		if (!CANONICALIZATION_METHODS.contains(parseNodeAttrib(item, "Algorithm"))){
 			throw new SignVerificationException(String.format("Unsupported algorithm '%s' in element 'ds:CanonicalizationMethod'.", item.getAttribute("Algorithm")));
 		}
 		
-		item = (Element) xPathSignatureMethod.evaluate(doc, XPathConstants.NODE);
-		String algorithm = item.getAttribute("Algorithm").substring(item.getAttribute("Algorithm").lastIndexOf('#') + 1).toLowerCase();
+		item = (Element) xpath.compile(SIGNATURE_XPATH).evaluate(doc, XPathConstants.NODE);
+		String algorithm = parseNodeAttrib(item, "Algorithm").substring(parseNodeAttrib(item, "Algorithm").lastIndexOf('#') + 1).toLowerCase();
 		if (!SIGNATURE_METHODS.contains(algorithm)){
 			throw new SignVerificationException(String.format("Unsupported algorithm '%s' in element 'ds:SignatureMethod'.", algorithm));
 		}
+	}
+	
+	/*
+	 * kontrola obsahu ds:Transforms a ds:DigestMethod vo všetkých referenciách 
+	 * v ds:SignedInfo – musia obsahovať URI niektorého z podporovaných algoritmov podľa profilu XAdES_ZEP,
+	 */
+	private void verifyTransformAndDigest() throws XPathExpressionException, SignVerificationException {
+		
+		NodeList nodes = (NodeList) xpath.compile(REFERENCE_XPATH).evaluate(doc, XPathConstants.NODESET);
+		
+		for(int i=0, size=nodes.getLength(); i < size; i++) {
+			Node node = nodes.item(i);
+			if (node.getNodeType() == Node.ELEMENT_NODE) {
+				Element item = (Element) xpath.compile(TRANSFORM_XPATH).evaluate(node, XPathConstants.NODE);
+				if (!TRANSFORM_METHODS.contains(parseNodeAttrib(item, "Algorithm"))){
+					throw new SignVerificationException(String.format("Unsupported algorithm '%s' in element 'ds:Transform'.", item.getAttribute("Algorithm")));
+				}
+				
+				item = (Element) xpath.compile(DIGEST_XPATH).evaluate(node, XPathConstants.NODE);
+				String algorithm = parseNodeAttrib(item, "Algorithm").substring(item.getAttribute("Algorithm").lastIndexOf('#') + 1).toLowerCase();
+				if (!DIGEST_METHODS.contains(algorithm.replace("-", ""))){
+					throw new SignVerificationException(String.format("Unsupported algorithm '%s' in element 'ds:DigestMethod'.", algorithm));
+				}
+			}
+		}
+	}
+	
+	private String parseNodeAttrib(Element node, String attribName){
+		if (node == null){
+			return "";
+		}
+		
+		return node.getAttribute(attribName);
 	}
 }
