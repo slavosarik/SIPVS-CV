@@ -30,8 +30,8 @@ import org.w3c.dom.Text;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import sk.fiit.sipvs.cv.models.DSigAppWrapper;
-import sk.fiit.sipvs.cv.models.DSigAppXmlPluginWrapper;
+import sk.fiit.sipvs.cv.models.DSigApp.DSigAppWrapper;
+import sk.fiit.sipvs.cv.models.DSigApp.DSigAppXmlPluginWrapper;
 
 public class SignController {
 

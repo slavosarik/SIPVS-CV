@@ -1,4 +1,4 @@
-package sk.fiit.sipvs.cv.models;
+package sk.fiit.sipvs.cv.models.DSigApp;
 
 import java.io.IOException;
 

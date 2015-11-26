@@ -8,11 +8,14 @@ import java.io.IOException;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.UIManager;
+import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import exceptions.SignVerificationException;
 import sk.fiit.sipvs.cv.views.form.FormView;
 import sk.fiit.sipvs.cv.views.sign.SignView;
 import sk.fiit.sipvs.cv.views.transform.TransformView;
@@ -86,8 +89,25 @@ public class MainClass {
 				signView = new SignView();
 				signView.show();
 			}
-		});		
-
+		});
+		
+		JButton verifyButton = getButton("Verify XML", 4);
+		window.add(verifyButton);
+		verifyButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					VerifyController.verifyXmlSignedFile();
+					JOptionPane.showMessageDialog(window, "Verification passed successfully.",
+							"Verification success", JOptionPane.INFORMATION_MESSAGE);
+				} catch (SignVerificationException e1) {
+					JOptionPane.showMessageDialog(window, e1.getMessage(),
+							"Verification error", JOptionPane.ERROR_MESSAGE);
+				} catch (XPathExpressionException e1) {
+					logger.error(e1);
+				}
+			}
+		});
+		
 		logger.info("App started");
 	}
 
@@ -106,5 +126,4 @@ public class MainClass {
 
 		return button;
 	}
-
 }
