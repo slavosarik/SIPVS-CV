@@ -4,16 +4,13 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
-import javax.xml.namespace.NamespaceContext;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
@@ -29,13 +26,12 @@ import exceptions.SignVerificationException;
 
 public class SignedXml {
 
-	private static final String CANONICALIZATION_XPATH = "//DataEnvelope/*[name()='ds:Signature']/*[name()='ds:SignedInfo']/*[name()='ds:CanonicalizationMethod']";
-	private static final String SIGNATURE_XPATH = "//DataEnvelope/*[name()='ds:Signature']/*[name()='ds:SignedInfo']/*[name()='ds:SignatureMethod']";
+	private static final String CANONICALIZATION_XPATH = "//*[local-name()='DataEnvelope']/*[local-name()='Signature']/*[local-name()='SignedInfo']/*[local-name()='CanonicalizationMethod']";
+	private static final String SIGNATURE_XPATH = "//*[local-name()='DataEnvelope']/*[local-name()='Signature']/*[local-name()='SignedInfo']/*[local-name()='SignatureMethod']";
 	
-	private static final String REFERENCE_XPATH = "//DataEnvelope/*[name()='ds:Signature']/*[name()='ds:SignedInfo']/*[name()='ds:Reference']";
-	private static final String TRANSFORM_XPATH = "*[name()='ds:Transforms']/*[name()='ds:Transform']";
-	private static final String DIGEST_XPATH = "*[name()='ds:DigestMethod']";
-	
+	private static final String REFERENCE_XPATH = "//*[local-name()='DataEnvelope']/*[local-name()='Signature']/*[local-name()='SignedInfo']/*[name()='Reference']";
+	private static final String TRANSFORM_XPATH = "*[local-name()='Transforms']/*[local-name()='Transform']";
+	private static final String DIGEST_XPATH = "*[local-name()='DigestMethod']";
 	
 	// Xades ZEP 4.3.1.1
 	private static final Set<String> CANONICALIZATION_METHODS = new HashSet<String>(Arrays.asList(
@@ -69,32 +65,8 @@ public class SignedXml {
 		DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 		xpath = XPathFactory.newInstance().newXPath();
 		
-		xpath.setNamespaceContext(getNameSpaceContext());
-		
 		doc = dBuilder.parse(xmlFile);
 		logger.info(String.format("File '%s' was sucessfully parsed.", xmlFile.getName()));
-	}
-
-	private NamespaceContext getNameSpaceContext(){
-		return new NamespaceContext() {
-		    public String getNamespaceURI(String prefix) {
-		    	if (prefix.equals("xzep")){
-		    		return "http://www.ditec.sk/ep/signature_formats/xades_zep/v1.0";
-		    	} else if (prefix.equals("ds")) {
-		    		return "http://www.w3.org/2000/09/xmldsig";
-		    	} else {
-		    		return null;
-		    	}
-		    }
-
-		    public Iterator<?> getPrefixes(String val) {
-		        return null;
-		    }
-
-		    public String getPrefix(String uri) {
-		        return null;
-		    }
-		};
 	}
 		
 	public void verify() throws SignVerificationException, XPathExpressionException {
@@ -130,8 +102,9 @@ public class SignedXml {
 	private void verifySignatureAlgorithms() throws SignVerificationException, XPathExpressionException {
 
 		Element item = (Element) xpath.compile(CANONICALIZATION_XPATH).evaluate(doc, XPathConstants.NODE);
+		logger.debug(item);
 		if (!CANONICALIZATION_METHODS.contains(parseNodeAttrib(item, "Algorithm"))){
-			throw new SignVerificationException(String.format("Unsupported algorithm '%s' in element 'ds:CanonicalizationMethod'.", item.getAttribute("Algorithm")));
+			throw new SignVerificationException(String.format("Unsupported algorithm '%s' in element 'ds:CanonicalizationMethod'.", parseNodeAttrib(item, "Algorithm")));
 		}
 		
 		item = (Element) xpath.compile(SIGNATURE_XPATH).evaluate(doc, XPathConstants.NODE);
