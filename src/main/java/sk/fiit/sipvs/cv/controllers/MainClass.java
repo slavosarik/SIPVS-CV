@@ -103,7 +103,7 @@ public class MainClass {
 					JOptionPane.showMessageDialog(window, e1.getMessage(),
 							"Verification error", JOptionPane.ERROR_MESSAGE);
 				} catch (XPathExpressionException e1) {
-					logger.error(e1);
+					logger.error(e1.getStackTrace(), e1);
 				}
 			}
 		});
