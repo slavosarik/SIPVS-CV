@@ -1,7 +1,9 @@
 package sk.fiit.sipvs.cv.models;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.security.cert.CertificateParsingException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -18,7 +20,11 @@ import javax.xml.xpath.XPathFactory;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-//import org.springframework.security.crypto.codec.Base64;
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.x509.Certificate;
+import org.bouncycastle.jce.provider.X509CertificateObject;
+import org.bouncycastle.util.encoders.Base64;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -30,34 +36,15 @@ import exceptions.SignVerificationException;
 /**
  * CHECKLIST & TODO
  *
- *
- *	OK - koreňový element musí obsahovať atribúty xmlns:xzep a xmlns:ds podľa profilu XADES_ZEP.
- *	OK - kontrola obsahu ds:SignatureMethod a ds:CanonicalizationMethod – musia obsahovať URI niektorého z podporovaných algoritmov pre dané elementy podľa profilu XAdES_ZEP
- *	OK - kontrola obsahu ds:Transforms a ds:DigestMethod vo všetkých referenciách v ds:SignedInfo – musia obsahovať URI niektorého z podporovaných algoritmov podľa profilu XAdES_ZEP
  *	TODO - overenie hodnoty podpisu ds:SignatureValue a referencií v ds:SignedInfo
  *			- dereferencovanie URI, kanonikalizácia referencovaných ds:Manifest elementov a overenie hodnôt odtlačkov ds:DigestValue
  *			- kanonikalizácia ds:SignedInfo a overenie hodnoty ds:SignatureValue pomocou pripojeného podpisového certifikátu v ds:KeyInfo,
- * 	OK - ds:Signature musí mať Id atribút, musí mať špecifikovaný namespace xmlns:ds
- * 	OK - ds:SignatureValue – musí mať Id atribút
  * 	OK - overenie existencie referencií v ds:SignedInfo a hodnôt atribútov Id a Type voči profilu XAdES_ZEP pre:
  * 			- ds:KeyInfo element,
  * 			- ds:SignatureProperties element,
  * 			- xades:SignedProperties element,
  * 			- všetky ostatné referencie v rámci ds:SignedInfo musia byť referenciami na ds:Manifest elementy,
- * 	OK - overenie obsahu ds:KeyInfo:
- * 			OK - musí mať Id atribút,
- * 			OK - musí obsahovať ds:X509Data, ktorý obsahuje elementy: ds:X509Certificate, ds:X509IssuerSerial, ds:X509SubjectName,
  * 	TODO 	- hodnoty elementov ds:X509IssuerSerial a ds:X509SubjectName súhlasia s príslušnými hodnatami v certifikáte, ktorý sa nachádza v ds:X509Certificate,
- *	OK - overenie obsahu ds:SignatureProperties:
- * 			- musí mať Id atribút,
- * 			- musí obsahovať dva elementy ds:SignatureProperty pre xzep:SignatureVersion a xzep:ProductInfos,
- * 			- obidva ds:SignatureProperty musia mať atribút Target nastavený na ds:Signature,
- * 	TODO - overenie ds:Manifest elementov:
- * 			- každý ds:Manifest element musí mať Id atribút,
- * 			- ds:Transforms musí byť z množiny podporovaných algoritmov pre daný element podľa profilu XAdES_ZEP,
- * 			- ds:DigestMethod – musí obsahovať URI niektorého z podporovaných algoritmov podľa profilu XAdES_ZEP,
- * 			- overenie hodnoty Type atribútu voči profilu XAdES_ZEP,
- * 			- každý ds:Manifest element musí obsahovať práve jednu referenciu na ds:Object,
  * 	TODO - overenie referencií v elementoch ds:Manifest
  * 			- dereferencovanie URI, aplikovanie príslušnej ds:Transforms transformácie (pri base64 decode),
  * 			- overenie hodnoty ds:DigestValue,
@@ -90,15 +77,23 @@ public class SignedXml {
 	private static final String X509SERIAL_NUMBER = X509ISSUER_SERIAL + "/*[local-name()='X509SerialNumber']";
 	
 	private static final String SIGNATURE_PROPERTIES_XPATH = SIGNATURE_XPATH + "/*[local-name()='Object']/*[local-name()='SignatureProperties']";
+	
+	private static final String MANIFEST_XPATH = SIGNATURE_XPATH + "/*[local-name()='Object']/*[local-name()='Manifest']";
 
 	// Xades ZEP 4.3.1.1
-	private static final Set<String> CANONICALIZATION_METHODS = new HashSet<String>(Arrays.asList(
+	private static final Set<String> CANONICALIZATION_REFERENCES = new HashSet<String>(Arrays.asList(
 			new String[] {"http://www.w3.org/TR/2001/REC-xml-c14n-20010315"}
 	));
 	
 	// Xades ZEP 4.5
-	private static final Set<String> SIGNATURE_METHODS = new HashSet<String>(Arrays.asList(
-			new String[] {"dsa-sha1", "rsa-sha1", "rsa-sha256", "rsa-sha384", "rsa-sha512"}
+	private static final Set<String> SIGNATURE_REFERENCES = new HashSet<String>(Arrays.asList(
+			new String[] {
+					"http://www.w3.org/2000/09/xmldsig#dsa-sha1", 
+					"http://www.w3.org/2000/09/xmldsig#rsa-sha1",
+					"http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+					"http://www.w3.org/2001/04/xmldsig-more#rsa-sha384",
+					"http://www.w3.org/2001/04/xmldsig-more#rsa-sha512"
+			}
 	));
 
 	// Xades ZEP 4.3.1.3.1
@@ -106,9 +101,23 @@ public class SignedXml {
 			new String[] {"http://www.w3.org/TR/2001/REC-xml-c14n-20010315"}
 	));
 
+	// Xades ZEP 4.3.4.1
+	private static final Set<String> TRANSFORM_METHODS2 = new HashSet<String>(Arrays.asList(
+			new String[] {
+					"http://www.w3.org/TR/2001/REC-xml-c14n-20010315",
+					"http://www.w3.org/2000/09/xmldsig#base64"
+			}
+	));
+	
 	// Xades ZEP 4.5
-	private static final Set<String> DIGEST_METHODS = new HashSet<String>(Arrays.asList(
-			new String[] {"sha1", "sha224", "sha256", "sha384", "sha512"}
+	private static final Set<String> DIGEST_REFERENCES = new HashSet<String>(Arrays.asList(
+			new String[] {
+					"http://www.w3.org/2000/09/xmldsig#sha1", 
+					"http://www.w3.org/2001/04/xmldsig-more#sha224",
+					"http://www.w3.org/2001/04/xmlenc#sha256",
+					"http://www.w3.org/2001/04/xmldsig-more#sha384",
+					"http://www.w3.org/2001/04/xmlenc#sha512"
+			}
 	));
 	
 	private static final Map<String, String> SIGNATURE_TYPES;
@@ -139,64 +148,71 @@ public class SignedXml {
 	}
 		
 	public void verify() throws SignVerificationException, XPathExpressionException {
-		verifyXmlnsAttributes();
+		verifyXmlnsAttributes(); // Rule 1
+
+		verifySignatureAlgorithms(); // Rule 2
+		verifyTransformAndDigest(); // Rule 3
+		coreValidation(); // Rule 4, 5
+		otherElementsValidations(); // Rule 6-25
 		
-		verifySignatureAlgorithms();
-		verifyTransformAndDigest();
-		coreValidation();
-		otherElementsValidations();
-		
-		verifyTimestamp();
-		verifyCrlValidity();
+		verifyTimestamp(); // Rule 26, 27
+		verifyCrlValidity(); // Rule 28
 	}
 	
 	private void verifyXmlnsAttributes() throws SignVerificationException {
-		if(doc.getDocumentElement().getAttribute("xmlns:xzep").isEmpty()){
-			throw new SignVerificationException("Attribute 'xmlns:xzep' is missing in root element.'");
+		// Rule 1
+		if (!doc.getDocumentElement().getAttribute("xmlns:xzep").equals("http://www.ditec.sk/ep/signature_formats/xades_zep/v1.0")) {
+			throw new SignVerificationException("Attribute 'xmlns:xzep' in root element has invalid value. (Rule 1)");
 		}
 		
-		NodeList childs = doc.getDocumentElement().getChildNodes();
-		for(int i=0, size=childs.getLength(); i < size; i++) {
-			Node node = childs.item(i);
-			if (node.getNodeType() == Node.ELEMENT_NODE) {
-				Element item = (Element) node;
-				if(item.getAttribute("xmlns:ds").isEmpty()){
-					throw new SignVerificationException(String.format("Attribute 'xmlns:ds' is missing in '%s' element.", item.getNodeName()));
-				}
-			}
-        }
+		// Rule 1
+		if (!doc.getDocumentElement().getAttribute("xmlns:ds").equals("http://www.w3.org/2000/09/xmldsig#")) {
+			throw new SignVerificationException("Attribute 'xmlns:ds' in root element has invalid value. (Rule 1)");
+		}
 	}
 	
 	private void verifySignatureAlgorithms() throws SignVerificationException, XPathExpressionException {
-
-		Element item = getElement(CANONICALIZATION_XPATH, "ds:CanonicalizationMethod");
-		if (!CANONICALIZATION_METHODS.contains(parseNodeAttrib(item, "Algorithm"))){
-			throw new SignVerificationException(String.format("Unsupported algorithm '%s' in element 'ds:CanonicalizationMethod'.", parseNodeAttrib(item, "Algorithm")));
+		// Rule 2
+		Element item1 = getElement(SIGNATURE_METHODS_XPATH);
+		if (item1 == null) throw new SignVerificationException(String.format("Missing element 'ds:SignatureMethod'. (Rule 2)"));
+		String algorithm = parseNodeAttrib(item1, "Algorithm").toLowerCase();
+		if (!SIGNATURE_REFERENCES.contains(algorithm)){
+			throw new SignVerificationException(String.format("Unsupported reference '%s' in element 'ds:SignatureMethod'. (Rule 2)", algorithm));
 		}
 		
-		item = getElement(SIGNATURE_METHODS_XPATH, "ds:SignatureMethod");
-		String algorithm = parseNodeAttrib(item, "Algorithm").substring(parseNodeAttrib(item, "Algorithm").lastIndexOf('#') + 1).toLowerCase();
-		if (!SIGNATURE_METHODS.contains(algorithm)){
-			throw new SignVerificationException(String.format("Unsupported algorithm '%s' in element 'ds:SignatureMethod'.", algorithm));
+		// Rule 2
+		Element item2 = getElement(CANONICALIZATION_XPATH);
+		if (item2 == null) throw new SignVerificationException(String.format("Missing element 'ds:CanonicalizationMethod'. (Rule 2)"));
+		if (!CANONICALIZATION_REFERENCES.contains(parseNodeAttrib(item2, "Algorithm"))){
+			throw new SignVerificationException(String.format("Unsupported reference '%s' in element 'ds:CanonicalizationMethod' (Rule 2).", parseNodeAttrib(item2, "Algorithm")));
 		}
 	}
 	
 	private void verifyTransformAndDigest() throws XPathExpressionException, SignVerificationException {
-		
+		// Rule 3
 		NodeList nodes = (NodeList) xpath.compile(REFERENCE_XPATH).evaluate(doc, XPathConstants.NODESET);
 		
+		// Each ds:Reference
 		for(int i=0, size=nodes.getLength(); i < size; i++) {
 			Node node = nodes.item(i);
 			if (node.getNodeType() == Node.ELEMENT_NODE) {
-				Element item = (Element) xpath.compile(TRANSFORM_XPATH).evaluate(node, XPathConstants.NODE);
-				if (!TRANSFORM_METHODS.contains(parseNodeAttrib(item, "Algorithm"))){
-					throw new SignVerificationException(String.format("Unsupported algorithm '%s' in element 'ds:Transform'.", item.getAttribute("Algorithm")));
+				// Each ds:Transform of ds:Transforms
+				NodeList transformNodes = (NodeList) xpath.compile(TRANSFORM_XPATH).evaluate(node, XPathConstants.NODESET);
+				for (int j = 0; j < transformNodes.getLength(); j++) {
+					Node n = transformNodes.item(j);
+					if (n.getNodeType() == Node.ELEMENT_NODE) {
+						Element item = (Element) n;
+						if (!TRANSFORM_METHODS.contains(parseNodeAttrib(item, "Algorithm"))){
+							throw new SignVerificationException(String.format("Unsupported reference '%s' in element 'ds:Transform' (Rule 3).", item.getAttribute("Algorithm")));
+						}
+					}
 				}
 				
-				item = (Element) xpath.compile(DIGEST_XPATH).evaluate(node, XPathConstants.NODE);
-				String algorithm = parseNodeAttrib(item, "Algorithm").substring(item.getAttribute("Algorithm").lastIndexOf('#') + 1).toLowerCase();
-				if (!DIGEST_METHODS.contains(algorithm.replace("-", ""))){
-					throw new SignVerificationException(String.format("Unsupported algorithm '%s' in element 'ds:DigestMethod'.", algorithm));
+				// ds:DigestMethod
+				Element item = (Element) xpath.compile(DIGEST_XPATH).evaluate(node, XPathConstants.NODE);
+				String algorithm = parseNodeAttrib(item, "Algorithm").toLowerCase();
+				if (!DIGEST_REFERENCES.contains(algorithm)){
+					throw new SignVerificationException(String.format("Unsupported reference '%s' in element 'ds:DigestMethod' (Rule 3).", algorithm));
 				}
 			}
 		}
@@ -211,32 +227,28 @@ public class SignedXml {
 		 */
 	}
 	
-	private void validateElementAttribs(Element element, String[] attribs, String elementName) throws XPathExpressionException, SignVerificationException{
-		for (String attr : attribs){
-			if (parseNodeAttrib(element, attr).isEmpty()){
-				throw new SignVerificationException(String.format("Missing '%s' in element '%s'.", attr, elementName));
-			}
-		}
-	}
-	
 	private void otherElementsValidations() throws XPathExpressionException, SignVerificationException {
-		validateElementAttribs(
-				getElement(SIGNATURE_XPATH, "ds:Signature"),
-				new String[] {"Id", "xmlns:ds"}, 
-				"ds:Signature"
-		);
+		// Rule 6, 7
+		Element item6 = getElement(SIGNATURE_XPATH);
+		if (item6 == null) throw new SignVerificationException(String.format("Missing element 'ds:Signature'. (Rule 6)"));
+		if (parseNodeAttrib(item6, "Id").isEmpty()) {
+			throw new SignVerificationException(String.format("Attribute 'Id' of 'ds:Signature' is missing or empty. (Rule 6)"));
+		}
+		if (!parseNodeAttrib(item6, "xmlns:ds").equals("http://www.w3.org/2000/09/xmldsig#")) {
+			throw new SignVerificationException(String.format("Attribute 'xmlns:ds' of 'ds:Signature' is missing or has invalid value. (Rule 7)"));		
+		}
 		
-		validateElementAttribs(
-				getElement(SIGNATURE_VALUE_XPATH, "ds:SignatureValue"),
-				new String[] {"Id"},
-				"ds:SignatureValue"
-		);
+		// Rule 8
+		Element item8 = getElement(SIGNATURE_VALUE_XPATH);
+		if (item8 == null) throw new SignVerificationException(String.format("Missing element 'SignatureValue'. (Rule 8)"));
+		if (parseNodeAttrib(item8, "Id").isEmpty()) {
+			throw new SignVerificationException(String.format("Attribute 'Id' of 'ds:SignatureValue' is missing or empty. (Rule 8)"));
+		}
 		
-		checkReferences();
-		validateKeyInfoElements();
-		validateSignatureProperties();
-		validateManifestObjects();
-		validateManifestReferences();
+		checkReferences(); // Rule 9, 10, 11, 12
+		validateKeyInfoElements(); // Rule 13, 14, 15
+		validateSignatureProperties(); // Rule 16, 17, 18
+		validateManifestObjects(); // Rule 19, 20, 21, 22, 23, 24, 25
 	}
 	
 	private void checkReferences() throws XPathExpressionException, SignVerificationException {
@@ -245,12 +257,13 @@ public class SignedXml {
 		for(int i=0, size=nodes.getLength(); i < size; i++) {
 			if (nodes.item(i).getNodeType() == Node.ELEMENT_NODE) {
 				Element element = (Element) nodes.item(i);
-				validateElementAttribs(element, new String[] {"Id", "Type", "URI"}, "ds:Reference");
+
+				validateElementAttribs(element, new String[] {"Id", "Type"}, "Missing '%s' in element 'ds:Reference'.");
 				
-				String reference = parseNodeAttrib(element, "URI");
+				/*String reference = parseNodeAttrib(element, "URI");
 				String type = parseNodeAttrib(element, "Type");
 				if (reference.isEmpty()){
-					throw new SignVerificationException(String.format("Empty refrence in element 'ds:Reference'.", reference));
+					throw new SignVerificationException(String.format("Empty reference in element 'ds:Reference'.", reference));
 				}
 				
 				element = (Element) getReference(reference.substring(1));
@@ -258,115 +271,177 @@ public class SignedXml {
 					throw new SignVerificationException(String.format("Missing referenced object for Id '%s'.", parseNodeAttrib(element, "Id")));
 				} else if (SIGNATURE_TYPES.get(type) != element.getNodeName()) {
 					throw new SignVerificationException(String.format("Wrong referenced type: expected '%s', got '%s'.", type, element.getNodeName()));
-				}
+				}*/
 			}
 		}
 	}
 	
-	private void validateKeyInfoElements() throws XPathExpressionException, SignVerificationException{
-		Element element = getElement(KEYINFO_XPATH, "ds:KeyInfo");
-		String issuerName, serialNumber, subjectName, certificateValue;
-		// byte[] certificateDecoded;
+	private void validateKeyInfoElements() throws XPathExpressionException, SignVerificationException {
+		// Rule 13
+		Element element = getElement(KEYINFO_XPATH);
+		if (element == null) throw new SignVerificationException(String.format("Missing element 'ds:KeyInfo'. (Rule 13/14/15)"));
 
-		validateElementAttribs(
-				element,
-				new String[] {"Id"},
-				"ds:KeyInfo"
-		);
+		validateElementAttribs(element, new String[] {"Id"}, "Missing '%s' in element 'ds:KeyInfo' (Rule 13)." );
 		
-		getElement(KEYINFO_DATA_XPATH, "ds:X509Data");
+		// Rule 14
+		Element e14 = getElement(KEYINFO_DATA_XPATH);
+		if (e14 == null) throw new SignVerificationException(String.format("Missing element 'ds:X509Data'. (Rule 14)"));
 		
-		certificateValue = getElement(X509CERTIFICATE, "ds:X509Certificate").getTextContent();
-		if (certificateValue == null){
-			throw new SignVerificationException(String.format("Missing value for 'ds:X509Certificate' element."));
-		}
-		// certificateDecoded = Base64.decode(certificateValue.getBytes());
-		
-		getElement(X509ISSUER_SERIAL, "ds:X509IssuerSerial");
-		issuerName = getElement(X509ISSUER_NAME, "ds:X509IssuerName").getTextContent();
-		if (issuerName == null){
-			throw new SignVerificationException(String.format("Missing value for 'ds:X509IssuerName' element."));
-		}
+		Element e14cert = getElement(X509CERTIFICATE);
+		if (e14cert == null) throw new SignVerificationException(String.format("Missing element 'ds:X509Certificate'. (Rule 14)"));
 
-		serialNumber = getElement(X509SERIAL_NUMBER, "ds:X509SerialNumber").getTextContent();
-		if (serialNumber == null){
-			throw new SignVerificationException(String.format("Missing value for 'ds:X509SerialNumber' element."));
-		}
+		Element e14issue = getElement(X509ISSUER_SERIAL);
+		if (e14issue == null) throw new SignVerificationException(String.format("Missing element 'ds:X509IssuerSerial'. (Rule 14)"));
 		
-		subjectName = getElement(X509SUBJECT_NAME, "ds:X509SubjectName").getTextContent();
-		if (subjectName == null){
-			throw new SignVerificationException(String.format("Missing value for 'ds:X509SubjectName' element."));
-		}
+		Element e14subject = getElement(X509SUBJECT_NAME);
+		if (e14subject == null) throw new SignVerificationException(String.format("Missing element 'ds:X509SubjectName'. (Rule 14)"));
 		
-		/* 
-		 * TODO hodnoty elementov ds:X509IssuerSerial a ds:X509SubjectName súhlasia s príslušnými
-		 * hodnatami v certifikáte, ktorý sa nachádza v ds:X509Certificate.
-		 */
+		// Rule 15
+		String cert = e14cert.getTextContent();
+		String issuerName = getElement(X509ISSUER_NAME).getTextContent();
+		String serialNumber = getElement(X509SERIAL_NUMBER).getTextContent();
+		String subjectName = e14subject.getTextContent();
+		
+		ASN1InputStream dis = new ASN1InputStream(new ByteArrayInputStream(Base64.decode(cert)));
+	    try {
+			Object dobj = dis.readObject();
+			ASN1Sequence sq = (ASN1Sequence) dobj;			
+			X509CertificateObject co = new X509CertificateObject(Certificate.getInstance(sq));
+			
+			if (!co.getSerialNumber().toString().equals(serialNumber)) {
+				throw new SignVerificationException(String.format("Invalid certificate serial number. (Rule 15)"));
+			}
+
+			System.out.println(co.getIssuerX500Principal());
+			System.out.println(issuerName);
+			if (!co.getIssuerX500Principal().getName().equals(issuerName)) {
+				throw new SignVerificationException(String.format("Invalid certificate issuer name. (Rule 15)"));
+			}
+
+			if (!co.getSubjectX500Principal().getName().equals(subjectName)) {
+				throw new SignVerificationException(String.format("Invalid certificate subject name. (Rule 15)"));
+			}
+		} catch (IOException | CertificateParsingException e) {
+			throw new SignVerificationException(String.format("Cannot decode X509 certificate. (Rule 15)"));
+		} finally {
+			try {
+				dis.close();
+			} catch (IOException e) {}
+		}
 	}
 	
 	private void validateSignatureProperties() throws XPathExpressionException, SignVerificationException{
-		Element element = getElement(SIGNATURE_XPATH, "ds:Signature");
-		String signatureId = parseNodeAttrib(element, "Id");
+		Element element0 = getElement(SIGNATURE_XPATH);
+		String signatureId = parseNodeAttrib(element0, "Id");
+
+		// Rule 16
+		Element element = getElement(SIGNATURE_PROPERTIES_XPATH);
+		if (parseNodeAttrib(element, "Id").isEmpty()) {
+			throw new SignVerificationException(String.format("Attribute 'Id' of 'ds:SignatureProperties' is missing or empty. (Rule 16)"));
+		}
+		
+		// Rule 17, 18
 		int nodeCount = 0;
-		
-		validateElementAttribs(
-				getElement(SIGNATURE_VALUE_XPATH, "ds:SignatureValue"),
-				new String[] {"Id"},
-				"ds:SignatureValue"
-		);
-		
-		element = getElement(SIGNATURE_PROPERTIES_XPATH, "ds:SignatureProperties");
+		boolean nodeSV = false;
+		boolean nodePI = false;
 		NodeList nodes = element.getChildNodes();
-		for (int i = 0; i < nodes.getLength(); i++){
+		for (int i = 0; i < nodes.getLength(); i++) {
 			Node node = nodes.item(i);
 			if (node.getNodeType() == Node.ELEMENT_NODE) {
 				Element item = (Element) node;
-				if (item == null || item.getNodeName() != "ds:SignatureProperty"){
-					throw new SignVerificationException("Element 'ds:SignatureProperties' must contain only 'ds:SignatureProperty' element.");
+				String name = item.getNodeName();
+
+				// Rule 18
+				String target = parseNodeAttrib(item, "Target");
+				if (target.isEmpty() || !target.substring(1).equals(signatureId)) {
+					throw new SignVerificationException(String.format("Element 'ds:SignatureProperty' must contain attribute 'Target' == %s (Rule 18).", signatureId));
 				}
 				
-				String nodeTarget = parseNodeAttrib(item, "Target");
-				if (nodeTarget.isEmpty() || !nodeTarget.substring(1).equals(signatureId)){
-					throw new SignVerificationException(String.format("Element 'ds:SignatureProperty' must contain attribute 'Target == %s.", signatureId));
-				}
-				
-				nodeCount += 1;
-				if (nodeCount == 1){
-					item = (Element) xpath.compile("*[local-name()='SignatureVersion']").evaluate(item, XPathConstants.NODE);
-					if (!item.getNodeName().equals("xzep:SignatureVersion")){
-						throw new SignVerificationException("First element 'ds:SignatureProperty' must contain 'xzep:SignatureVersion' element.");
-					}					
-				} else if (nodeCount == 2){
-					
-					item = (Element) xpath.compile("*[local-name()='ProductInfos']").evaluate(item, XPathConstants.NODE);
-					if (!item.getNodeName().equals("xzep:ProductInfos")){
-						throw new SignVerificationException("Second element 'ds:SignatureProperty' must contain 'xzep:ProductInfos' element.");
+				// Rule 17
+				NodeList children = item.getChildNodes();
+				for (int j = 0; j < children.getLength(); j++) {
+					Node n = children.item(j);
+					if (n.getNodeType() == Node.ELEMENT_NODE) {
+						Element e = (Element) n;
+						if (e.getNodeName() == "xzep:SignatureVersion") {
+							nodeSV = true;
+							break;
+						} else if (e.getNodeName() == "xzep:ProductInfos") {
+							nodePI = true;
+							break;
+						}
 					}
+				}
+				
+				if (name == "ds:SignatureProperty") {
+					nodeCount += 1;
 				}
 			}
 		}
 		
-		if (nodeCount != 2){
-			throw new SignVerificationException("Element 'ds:SignatureProperties' must contain exactly two 'ds:SignatureProperty' elements.");
+		if (!nodeSV) throw new SignVerificationException("Element 'xzep:SignatureVersion' inside 'ds:SignatureProperty' is missing (Rule 17).");
+		if (!nodePI) throw new SignVerificationException("Element 'xzep:ProductInfos' inside 'ds:SignatureProperty' is missing (Rule 17).");
+
+		if (nodeCount < 2) {
+			throw new SignVerificationException("Element 'ds:SignatureProperties' must contain two 'ds:SignatureProperty' elements (Rule 17).");
 		}
 	}
 	
-	private void validateManifestObjects(){
-		/*
-		 * TODO každý ds:Manifest element musí mať Id atribút,
-		 * 			- ds:Transforms musí byť z množiny podporovaných algoritmov pre daný element podľa profilu XAdES_ZEP,
-		 * 			- ds:DigestMethod – musí obsahovať URI niektorého z podporovaných algoritmov podľa profilu XAdES_ZEP,
-		 * 			- overenie hodnoty Type atribútu voči profilu XAdES_ZEP,
-		 * 			- každý ds:Manifest element musí obsahovať práve jednu referenciu na ds:Object,
-		 */
-	}
-	
-	private void validateManifestReferences(){
-		/*
-		 * TODO overenie referencií v elementoch ds:Manifest:
-		 * 			dereferencovanie URI, aplikovanie príslušnej ds:Transforms transformácie (pri base64 decode),
-		 * 			overenie hodnoty ds:DigestValue,
-		 */
+	private void validateManifestObjects() throws XPathExpressionException, SignVerificationException{
+		NodeList nodes = (NodeList) xpath.compile(MANIFEST_XPATH).evaluate(doc, XPathConstants.NODESET);
+
+		for (int i = 0; i < nodes.getLength(); i++) { // Each manifest
+			Node node = nodes.item(i);
+			if (node.getNodeType() == Node.ELEMENT_NODE) {
+				Element element = (Element) node;
+
+				// Rule 19
+				if (parseNodeAttrib(element, "Id").isEmpty()) {
+					throw new SignVerificationException(String.format("Attribute 'Id' of 'ds:Manifest' is missing or empty. (Rule 19)"));
+				}
+				
+				NodeList childNodes = node.getChildNodes();
+				int nodeCount = 0;
+				for (int j = 0; j < childNodes.getLength(); j++) { // Each "reference"
+					Node n = childNodes.item(j);
+					if (n.getNodeType() == Node.ELEMENT_NODE) {
+						Element e = (Element) n;
+						if (e.getNodeName() == "ds:Reference") {						
+							// Rule 20
+							NodeList transformNodes = (NodeList) xpath.compile(TRANSFORM_XPATH).evaluate(n, XPathConstants.NODESET);
+							for (int k = 0; k < transformNodes.getLength(); k++) { // Each ds:Transform of ds:Transforms
+								Node n0 = transformNodes.item(k);
+								if (n0.getNodeType() == Node.ELEMENT_NODE) {
+									Element item0 = (Element) n0;
+									if (!TRANSFORM_METHODS2.contains(parseNodeAttrib(item0, "Algorithm"))){
+										throw new SignVerificationException(String.format("Unsupported reference '%s' in element 'ds:Transform' (Rule 20).", item0.getAttribute("Algorithm")));
+									}
+								}
+							}
+							
+							// Rule 21
+							Element item = (Element) xpath.compile(DIGEST_XPATH).evaluate(n, XPathConstants.NODE);
+							String algorithm = parseNodeAttrib(item, "Algorithm").toLowerCase();
+							if (!DIGEST_REFERENCES.contains(algorithm)){
+								throw new SignVerificationException(String.format("Unsupported reference '%s' in element 'ds:DigestMethod' (Rule 21).", algorithm));
+							}
+
+							// Rule 22
+							if (!parseNodeAttrib(e, "Type").equals("http://www.w3.org/2000/09/xmldsig#Object")) {
+								throw new SignVerificationException(String.format("Attribute 'Type' of 'ds:Reference' has invalid value. (Rule 22)"));
+							}
+							
+							nodeCount += 1;
+						}
+					}
+				}
+
+				// Rule 23
+				if (nodeCount != 1) {
+					throw new SignVerificationException(String.format("More than one reference in 'ds:Manifest'. (Rule 23)"));
+				}
+			}
+		}	
 	}
 	
 	private void verifyTimestamp(){
@@ -384,17 +459,21 @@ public class SignedXml {
 		 */
 	}
 	
+	private void validateElementAttribs(Element element, String[] attribs, String errorText) throws XPathExpressionException, SignVerificationException{
+		for (String attr : attribs){
+			if (parseNodeAttrib(element, attr).isEmpty()){
+				throw new SignVerificationException(String.format(errorText, attr));
+			}
+		}
+	}	
+
 	private Node getReference(String referenceId) throws XPathExpressionException {
 		return (Node) xpath.compile(String.format("//*[@Id='%s']", referenceId)).evaluate(doc, XPathConstants.NODE);
 	}
 
-	private Element getElement(String xpath, String elementName) throws SignVerificationException, XPathExpressionException{
+	private Element getElement(String xpath) throws XPathExpressionException{
 		Element element = (Element) this.xpath.compile(xpath).evaluate(doc, XPathConstants.NODE);
-		
-		if (element == null){
-			throw new SignVerificationException(String.format("Missing element '%s'.", elementName));
-		}
-		
+
 		return element;
 	}
 	
