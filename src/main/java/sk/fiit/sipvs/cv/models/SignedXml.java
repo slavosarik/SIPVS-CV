@@ -7,18 +7,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.security.cert.CRLException;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateFactory;
+import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.CertificateParsingException;
-import java.security.cert.X509Certificate;
 import java.security.cert.X509CRL;
+import java.security.cert.X509CRLEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,7 +26,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -44,15 +43,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.Certificate;
-import org.bouncycastle.cert.X509CRLHolder;
 import org.bouncycastle.cert.X509CertificateHolder;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSSignedData;
-import org.bouncycastle.crypto.Digest;
-import org.bouncycastle.jcajce.provider.util.DigestFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.provider.X509CertificateObject;
 import org.bouncycastle.tsp.TSPException;
@@ -153,6 +147,7 @@ public class SignedXml {
 				throw new UnsupportedOperationException();
 			}
 
+			@SuppressWarnings("rawtypes")
 			public Iterator getPrefixes(String uri) {
 				throw new UnsupportedOperationException();
 			}
@@ -173,8 +168,13 @@ public class SignedXml {
 		verifyKeyInfo(); // Rule 13, 14, 15
 		verifySignatureProperties(); // Rule 16, 17, 18
 		verifyManifests(); // Rule 19, 20, 21, 22, 23, 24, 25
-		verifyTimestamp(); // Rule 26, 27
-		verifyCertificate(); // Rule 28
+		
+		// Read timestamp, CRL
+		TimeStampToken token = getTimestampToken();
+		X509CRL crl = getCRL();
+
+		verifyTimestamp(token, crl); // Rule 26, 27
+		verifyCertificate(token, crl); // Rule 28
 	}
 
 	/**
@@ -299,7 +299,7 @@ public class SignedXml {
 		
 		// Rule 14
 		querySelector("//ds:Signature/ds:KeyInfo/ds:X509Data", "Cannot find 'ds:X509Data' element (Rule 14).");
-		Element x509Certificate = querySelector("//ds:Signature/ds:KeyInfo/ds:X509Data/ds:X509Certificate",
+		querySelector("//ds:Signature/ds:KeyInfo/ds:X509Data/ds:X509Certificate",
 				"Cannot find 'ds:X509Certificate' element (Rule 14).");
 		querySelector("//ds:Signature/ds:KeyInfo/ds:X509Data/ds:X509IssuerSerial",
 				"Cannot find 'ds:X509IssuerSerial' element (Rule 14).");
@@ -312,31 +312,24 @@ public class SignedXml {
 		Element x509SerialNumber = querySelector("//ds:Signature/ds:KeyInfo/ds:X509Data/ds:X509IssuerSerial/ds:X509SerialNumber",
 				"Cannot find 'ds:X509SerialNumber' element (Rule 15).");
 
-		try {
-			ASN1InputStream is = new ASN1InputStream(new ByteArrayInputStream(Base64.decode(x509Certificate.getTextContent())));
-			ASN1Sequence sq = (ASN1Sequence) is.readObject();
-			X509CertificateObject cert = new X509CertificateObject(Certificate.getInstance(sq));
-			
-			String certIssuerName = cert.getIssuerX500Principal().toString().replaceAll("ST=", "S="); // Fix ST/S issue
-			String certSerialNumber = cert.getSerialNumber().toString();
-			String certSubjectName = cert.getSubjectX500Principal().toString();
-			
-			if (!certIssuerName.equals(x509IssuerName.getTextContent())) {
-				throw new SignVerificationException("Invalid certificate issuer name (Rule 15).");
-			}
+		X509CertificateObject cert = getCertificate();		
+		String certIssuerName = cert.getIssuerX500Principal().toString().replaceAll("ST=", "S="); // Fix ST/S issue
+		String certSerialNumber = cert.getSerialNumber().toString();
+		String certSubjectName = cert.getSubjectX500Principal().toString();
 
-			if (!certSerialNumber.equals(x509SerialNumber.getTextContent())) {
-				throw new SignVerificationException("Invalid certificate serial number (Rule 15).");
-			}
-			
-			if (!certSubjectName.equals(x509SubjectName.getTextContent())) {
-				throw new SignVerificationException("Invalid certificate subject name (Rule 15).");
-			}
-		} catch (IOException | CertificateParsingException e) {
-			throw new SignVerificationException("Cannot read certificate (Rule 15).");
+		if (!certIssuerName.equals(x509IssuerName.getTextContent())) {
+			throw new SignVerificationException("Invalid certificate issuer name (Rule 15).");
+		}
+
+		if (!certSerialNumber.equals(x509SerialNumber.getTextContent())) {
+			throw new SignVerificationException("Invalid certificate serial number (Rule 15).");
+		}
+		
+		if (!certSubjectName.equals(x509SubjectName.getTextContent())) {
+			throw new SignVerificationException("Invalid certificate subject name (Rule 15).");
 		}
 	}
-	
+
 	/**
 	 *	Verify signature properties - Rule 16, 17, 18
 	 */
@@ -413,17 +406,7 @@ public class SignedXml {
 	/**
 	 *	Verify timestamp - Rule 26, 27
 	 */
-	private void verifyTimestamp() throws SignVerificationException, XPathExpressionException {
-		Element timestamp = querySelector("//xades:EncapsulatedTimeStamp", "Cannot find 'xades:EncapsulatedTimeStamp' element (Rule 26, 27).");
-
-		// Read timestamp
-		TimeStampToken token = null;
-		try {
-			token = new TimeStampToken(new CMSSignedData(Base64.decode(timestamp.getTextContent())));
-		} catch (DOMException | TSPException | IOException | CMSException e) {
-			throw new SignVerificationException("Cannot read timestamp (Rule 26, 27).");
-		}
-
+	private void verifyTimestamp(TimeStampToken token, X509CRL crl) throws SignVerificationException, XPathExpressionException {
 		// Read timestamp signature certificate
 		X509CertificateHolder signCert = getTimestampSignatureCertificate(token);
 		if (signCert == null) {
@@ -431,20 +414,15 @@ public class SignedXml {
 		}
 
 		// Rule 26 - Validity
-		// Check certificate validity
+		// Check current certificate validity
 		if (!signCert.isValidOn(new Date())) {
 			throw new SignVerificationException("Timestamp signature certificate is not valid now (Rule 26).");
 		}
 
 		// Check against CRL
-		try {
-			X509CRL crl = getCRL();
-			X509Certificate cert = new JcaX509CertificateConverter().setProvider("BC").getCertificate(signCert);
-			if (crl.isRevoked(cert)) {
-				throw new SignVerificationException("Timestamp signature certificate is revoked (Rule 26).");
-			}
-		} catch (CertificateException e1) {
-			throw new SignVerificationException("Cannot verify timestamp signature certificate against CRL (Rule 26).");
+		X509CRLEntry entry = crl.getRevokedCertificate(signCert.getSerialNumber());
+		if (entry != null) {
+			throw new SignVerificationException("Timestamp signature certificate is revoked (Rule 26).");
 		}
 
 		// Rule 27 - Message imprint
@@ -470,26 +448,27 @@ public class SignedXml {
 	/**
 	 *	Verify certificate - Rule 28
 	 */
-	private void verifyCertificate() throws SignVerificationException, XPathExpressionException {
-		// TODO
+	private void verifyCertificate(TimeStampToken token, X509CRL crl) throws SignVerificationException, XPathExpressionException {
+		X509CertificateObject cert = getCertificate();
+
+		// Check validity at timestamp
+		try {
+			cert.checkValidity(token.getTimeStampInfo().getGenTime());
+		} catch (CertificateExpiredException e) {
+			throw new SignVerificationException("Document certificate was expired at signing time (Rule 28).");
+		} catch (CertificateNotYetValidException e) {
+			throw new SignVerificationException("Document certificate was not valid yet at signing time (Rule 28).");
+		}
+
+		// Check against CRL
+		X509CRLEntry entry = crl.getRevokedCertificate(cert.getSerialNumber());
+		if (entry != null && entry.getRevocationDate().before(token.getTimeStampInfo().getGenTime())) {
+			throw new SignVerificationException("Document certificate was revoked at signing time (Rule 28).");
+		}
 	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+
 	/**
-	 *	Utilities
+	 *	Utilities - Node operations
 	 */
 	private Element querySelector(String selector, String customError) throws SignVerificationException, XPathExpressionException {
 		Element element = (Element) this.xpath.compile(selector).evaluate(doc, XPathConstants.NODE);
@@ -540,6 +519,9 @@ public class SignedXml {
 		return element.getAttribute(attrName);
 	}
 	
+	/**
+	 *	Utilities - Assertions
+	 */
 	private void shouldHaveAttribute(Element element, String attrName, String customError) throws SignVerificationException {
 		String attrValue = getAttributeValue(element, attrName);
 		if (attrValue.isEmpty()) {
@@ -561,6 +543,38 @@ public class SignedXml {
 		}
 	}
 	
+	/**
+	 *	Utilities - Read certificate from document 
+	 */
+	private X509CertificateObject getCertificate() throws XPathExpressionException, SignVerificationException {
+		Element x509Certificate = querySelector("//ds:Signature/ds:KeyInfo/ds:X509Data/ds:X509Certificate",
+				"Cannot find 'ds:X509Certificate' element (Rule 15, 28).");
+
+		X509CertificateObject cert = null;
+		ASN1InputStream is = null;
+		try {
+			is = new ASN1InputStream(new ByteArrayInputStream(Base64.decode(x509Certificate.getTextContent())));
+			ASN1Sequence sq = (ASN1Sequence) is.readObject();
+			cert = new X509CertificateObject(Certificate.getInstance(sq));
+		} catch (IOException | CertificateParsingException e) {
+			throw new SignVerificationException("Cannot read certificate (Rule 15, 28).");
+		} finally {
+			if (is != null) {
+				try {
+					is.close();
+				} catch (IOException e) {
+					throw new SignVerificationException("Cannot read certificate (Rule 15, 28).");
+				}
+			}
+		}
+
+		return cert;
+	}
+
+	
+	/**
+	 *	Utilities - Extract signature certificate from timestamp token
+	 */
 	private X509CertificateHolder getTimestampSignatureCertificate(TimeStampToken token) throws SignVerificationException {
 		X509CertificateHolder signCert = null;
 
@@ -582,11 +596,29 @@ public class SignedXml {
 
 		return signCert;
 	}
+
+	/**
+	 *	Utilities - Read timestamp token from document
+	 */
+	private TimeStampToken getTimestampToken() throws SignVerificationException, XPathExpressionException {
+		Element timestamp = querySelector("//xades:EncapsulatedTimeStamp", "Cannot find 'xades:EncapsulatedTimeStamp' element (Rule 26, 27, 28).");
+		TimeStampToken token = null;
+		try {
+			token = new TimeStampToken(new CMSSignedData(Base64.decode(timestamp.getTextContent())));
+		} catch (DOMException | TSPException | IOException | CMSException e) {
+			throw new SignVerificationException("Cannot read timestamp (Rule 26, 27, 28).");
+		}
+		
+		return token;
+	}
 	
+	/**
+	 *	Utilities - Download and parse CRL
+	 */
 	private X509CRL getCRL() throws SignVerificationException {
 		ByteArrayInputStream crlStream = readURL("http://test.monex.sk/DTCCACrl/DTCCACrl.crl");
 		if (crlStream == null) {
-			throw new SignVerificationException("Cannot read CRL.");
+			throw new SignVerificationException("Cannot read CRL (Rule 26, 27, 28).");
 		}
 
 		CertificateFactory certFactory;
@@ -595,12 +627,15 @@ public class SignedXml {
 			certFactory = CertificateFactory.getInstance("X.509", "BC");
 			crl = (X509CRL) certFactory.generateCRL(crlStream);
 		} catch (CertificateException | CRLException | NoSuchProviderException e) {
-			throw new SignVerificationException("Cannot parse CRL.");
+			throw new SignVerificationException("Cannot parse CRL (Rule 26, 27, 28).");
 		}
 
 		return crl;
 	}
 
+	/**
+	 *	Utilities - Read data from URL to byte stream
+	 */
 	private ByteArrayInputStream readURL(String url) {	
 		URL urlData = null;
 		try {
