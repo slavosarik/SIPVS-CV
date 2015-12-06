@@ -40,7 +40,6 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import exceptions.SignVerificationException;
-import net.sf.saxon.sxpath.XPathVariable;
 
 public class SignedXml {
 
@@ -92,6 +91,16 @@ public class SignedXml {
 			}
 	));
 	
+	// XAdES ZEP 4.3.1.3
+	private static final Map<String, String> REFERENCE_TYPES;
+	static {
+		REFERENCE_TYPES = new HashMap<String, String>();
+		REFERENCE_TYPES.put("ds:KeyInfo", "http://www.w3.org/2000/09/xmldsig#Object");
+		REFERENCE_TYPES.put("ds:SignatureProperties", "http://www.w3.org/2000/09/xmldsig#SignatureProperties");
+		REFERENCE_TYPES.put("xades:SignedProperties", "http://uri.etsi.org/01903#SignedProperties");
+		REFERENCE_TYPES.put("ds:Manifest", "http://www.w3.org/2000/09/xmldsig#Manifest");
+	}
+	
 	public SignedXml(File xmlFile) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException {
 		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 		dbFactory.setNamespaceAware(true);
@@ -106,6 +115,7 @@ public class SignedXml {
 				if (prefix == null) throw new NullPointerException("Null prefix");
 				else if ("ds".equals(prefix)) return "http://www.w3.org/2000/09/xmldsig#";
 				else if ("xzep".equals(prefix)) return "http://www.ditec.sk/ep/signature_formats/xades_zep/v1.0";
+				else if ("xades".equals(prefix)) return "http://uri.etsi.org/01903/v1.3.2#";
 				else if ("xml".equals(prefix)) return XMLConstants.XML_NS_URI;
 				return XMLConstants.NULL_NS_URI;
 			}
@@ -133,7 +143,9 @@ public class SignedXml {
 		verifyReferences(); // Rule 9, 10, 11, 12
 		verifyKeyInfo(); // Rule 13, 14, 15
 		verifySignatureProperties(); // Rule 16, 17, 18
-		verifyManifests(); // Rule 19, 20, 21, 22, 23
+		verifyManifests(); // Rule 19, 20, 21, 22, 23, 24, 25
+		verifyTimestamp(); // Rule 26, 27
+		verifyCertificate(); // Rule 28
 	}
 
 	/**
@@ -210,7 +222,41 @@ public class SignedXml {
 	 *	Verify references - Rule 9, 10, 11, 12
 	 */
 	private void verifyReferences() throws SignVerificationException, XPathExpressionException {
-		// TODO
+		ArrayList<Element> references = querySelectorAll("//ds:Signature/ds:SignedInfo/ds:Reference");
+		
+		// Check reference types
+		for (Element e : references) {
+			String targetId = getAttributeValue(e, "URI").substring(1);
+			String type = getAttributeValue(e, "Type");
+			//String id = getAttributeValue(e, "Id");
+
+			Element targetElement = querySelector("//ds:Signature//*[@Id='" + targetId + "']",
+					"Cannot find element with 'Id' of '" + targetId + "' (Rule 9-12).");
+			String targetNodeName = targetElement.getNodeName();
+
+			// Check if reference is only for allowed type
+			if (REFERENCE_TYPES.containsKey(targetNodeName)) {
+				// Check if reference has correct type
+				if (!REFERENCE_TYPES.get(targetNodeName).equals(type)) {
+					throw new SignVerificationException("Element 'ds:Reference' has invalid 'Type' value - '"
+							+ type + "' for element '" + targetNodeName + "' (Rule 9-12).");
+				}
+			} else {
+				throw new SignVerificationException("Found reference to invalid element type '" + targetNodeName + "' (Rule 12).");
+			}
+
+			// Check existence of referencing element (XAdES 4.3.1.3)
+			/*querySelector("//xades:DataObjectFormat[@Id='" + id + "']",
+					"Cannot find 'xades:DataObjectFormat' that references 'ds:Reference' with 'Id' = '" + id + "' (Rule 9-12).");*/
+		}
+
+		// Check existence of mandatory references
+		querySelector("//ds:Signature/ds:SignedInfo/ds:Reference[@Type='http://www.w3.org/2000/09/xmldsig#Object']",
+				"Cannot find 'ds:Reference' to 'ds:KeyInfo' (Rule 9).");
+		querySelector("//ds:Signature/ds:SignedInfo/ds:Reference[@Type='http://www.w3.org/2000/09/xmldsig#SignatureProperties']",
+				"Cannot find 'ds:Reference' to 'ds:SignatureProperties' (Rule 10).");
+		querySelector("//ds:Signature/ds:SignedInfo/ds:Reference[@Type='http://uri.etsi.org/01903#SignedProperties']",
+				"Cannot find 'ds:Reference' to 'xades:SignedProperties' (Rule 11).");
 	}
 	
 	/**
@@ -287,7 +333,7 @@ public class SignedXml {
 	}
 	
 	/**
-	 *	Verify manifests - Rule 19, 20, 21, 22, 23
+	 *	Verify manifests - Rule 19, 20, 21, 22, 23, 24, 25
 	 */
 	private void verifyManifests() throws SignVerificationException, XPathExpressionException {
 		// Rule 19
@@ -324,6 +370,22 @@ public class SignedXml {
 			shouldHaveAttributeValue(e, "Type", "http://www.w3.org/2000/09/xmldsig#Object",
 					"Attribute 'Type' of 'ds:Reference' has invalid value (Rule 22).");
 		}
+		
+		// TODO: 24, 25
+	}
+	
+	/**
+	 *	Verify timestamp - Rule 26, 27
+	 */
+	private void verifyTimestamp() throws SignVerificationException, XPathExpressionException {
+		// TODO
+	}
+	
+	/**
+	 *	Verify certificate - Rule 28
+	 */
+	private void verifyCertificate() throws SignVerificationException, XPathExpressionException {
+		// TODO
 	}
 	
 	
