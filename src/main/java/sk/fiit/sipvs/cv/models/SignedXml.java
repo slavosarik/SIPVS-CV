@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.MessageDigest;
@@ -34,6 +35,13 @@ import javax.xml.namespace.NamespaceContext;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.TransformerFactoryConfigurationError;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -61,6 +69,9 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import exceptions.SignVerificationException;
+import nu.xom.Builder;
+import nu.xom.ParsingException;
+import nu.xom.canonical.Canonicalizer;
 
 public class SignedXml {
 
@@ -122,8 +133,19 @@ public class SignedXml {
 		REFERENCE_TYPES.put("ds:Manifest", "http://www.w3.org/2000/09/xmldsig#Manifest");
 	}
 	
+	private static final Map<String, String> DIGESTS;
+	static {
+		DIGESTS = new HashMap<String, String>();
+		DIGESTS.put("http://www.w3.org/2000/09/xmldsig#sha1", "SHA-1");
+		DIGESTS.put("http://www.w3.org/2001/04/xmldsig-more#sha224", "SHA-224");
+		DIGESTS.put("http://www.w3.org/2001/04/xmlenc#sha256", "SHA-256");
+		DIGESTS.put("http://www.w3.org/2001/04/xmldsig-more#sha384", "SHA-384");
+		DIGESTS.put("http://www.w3.org/2001/04/xmlenc#sha512", "SHA-512");
+	}
+	
 	public SignedXml(File xmlFile) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException {
 		Security.addProvider(new BouncyCastleProvider());
+		//org.apache.xml.security.Init.init();
 
 		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 		dbFactory.setNamespaceAware(true);
@@ -380,27 +402,81 @@ public class SignedXml {
 				throw new SignVerificationException("Element 'ds:Manifest' contains 0 or more than 2 references (Rule 23).");
 			}
 		}
-		
-		// Rule 20
-		ArrayList<Element> transforms = querySelectorAll("//ds:Signature/ds:Object/ds:Manifest/ds:Reference/ds:Transforms/ds:Transform");
-		for (Element e : transforms) {
-			shouldHaveAttributeValueFrom(e, "Algorithm", MANIFEST_TRANSFORM_REFERENCES, "Invalid transform (Rule 20).");
-		}
-		
-		// Rule 21
-		ArrayList<Element> digestMethods = querySelectorAll("//ds:Signature/ds:Object/ds:Manifest/ds:Reference/ds:DigestMethod");
-		for (Element e : digestMethods) {
-			shouldHaveAttributeValueFrom(e, "Algorithm", DIGEST_REFERENCES, "Invalid digest method (Rule 21).");
-		}
-		
-		// Rule 22
+
 		ArrayList<Element> references = querySelectorAll("//ds:Signature/ds:Object/ds:Manifest/ds:Reference");
 		for (Element e : references) {
+			// Rule 22
 			shouldHaveAttributeValue(e, "Type", "http://www.w3.org/2000/09/xmldsig#Object",
 					"Attribute 'Type' of 'ds:Reference' has invalid value (Rule 22).");
+			
+			// Dereference URI
+			// Rule 24
+			String urlTarget = getAttributeValue(e, "URI").substring(1);
+			Element target = querySelector(String.format("/xzep:DataEnvelope/ds:Object[@Id='%s']", urlTarget),
+					String.format("Cannot find referenced 'ds:Object' element with 'Id' = '%s' (Rule 24, 25)", urlTarget));
+			byte[] targetBytes = serializeElement(target).getBytes();
+			
+			// Reference digest method
+			Element digestMethod = querySelector("ds:DigestMethod", e, "Cannot find 'ds:DigestMethod' inside 'ds:Reference' (Rule 21).");
+			// Rule 21			
+			shouldHaveAttributeValueFrom(digestMethod, "Algorithm", DIGEST_REFERENCES, "Invalid digest method (Rule 21).");
+			
+			// Reference transforms
+			ArrayList<Element> transforms = querySelectorAll("ds:Transforms/ds:Transform", e);
+			for (Element t : transforms) {
+				// Rule 20
+				shouldHaveAttributeValueFrom(t, "Algorithm", MANIFEST_TRANSFORM_REFERENCES, "Invalid transform (Rule 20).");
+
+				// Rule 24
+				String transAlgorithm = getAttributeValue(t, "Algorithm");
+				if (transAlgorithm.equals("http://www.w3.org/TR/2001/REC-xml-c14n-20010315")) {
+					// Apply canonicalization
+					
+					try {
+						InputStream is = new ByteArrayInputStream(targetBytes);
+						Builder parser = new Builder();
+						nu.xom.Document doc;
+						doc = parser.build(is);
+						ByteArrayOutputStream canonicalOs = new ByteArrayOutputStream();
+						Canonicalizer canonicalizer = new Canonicalizer(canonicalOs, transAlgorithm);
+						canonicalizer.write(doc);
+						targetBytes = canonicalOs.toByteArray();
+						//System.out.println(new String(targetBytes));
+					} catch (ParsingException | IOException e1) {
+						throw new SignVerificationException("Cannot apply canonicalization (Rule 24).");
+					}
+
+					/*try {
+						Canonicalizer canon = Canonicalizer.getInstance(transAlgorithm);
+						targetBytes = canon.canonicalize(targetBytes);
+						//targetBytes = canon.canonicalizeSubtree(target);
+					} catch (CanonicalizationException | ParserConfigurationException | IOException | SAXException | InvalidCanonicalizerException e1) {
+						throw new SignVerificationException("Cannot apply canonicalization (Rule 24).");
+					}*/
+				} else if (transAlgorithm.equals("http://www.w3.org/2000/09/xmldsig#base64")) {
+					// Apply base64 decode
+					targetBytes = Base64.decode(targetBytes);
+				}
+			}
+			
+			// Rule 25
+			// Calculate digest of referenced element
+			MessageDigest messageDigest = null;
+			try {
+				messageDigest = MessageDigest.getInstance(DIGESTS.get(getAttributeValue(digestMethod, "Algorithm")), "BC");
+			} catch (NoSuchAlgorithmException | NoSuchProviderException e2) {
+				throw new SignVerificationException("Unsupported digest type (Rule 25).");
+			}
+			String targetDigest = new String(Base64.encode(messageDigest.digest(targetBytes)));
+			
+			// Retrieve expected digest
+			Element digestValue = querySelector("ds:DigestValue", e, "Cannot find 'ds:DigestValue' inside 'ds:Reference' (Rule 25).");
+			String expectedDigest = digestValue.getTextContent();			
+
+			if (!targetDigest.equals(expectedDigest)) {
+				throw new SignVerificationException("Element 'ds:Reference' digest check failure (Rule 25).");
+			}
 		}
-		
-		// TODO: 24, 25
 	}
 
 	/**
@@ -468,22 +544,26 @@ public class SignedXml {
 	}
 
 	/**
-	 *	Utilities - Node operations
+	 *	Utilities - Node traversal
 	 */
-	private Element querySelector(String selector, String customError) throws SignVerificationException, XPathExpressionException {
-		Element element = (Element) this.xpath.compile(selector).evaluate(doc, XPathConstants.NODE);
-		
+	private Element querySelector(String selector, Element context, String customError) throws SignVerificationException, XPathExpressionException {
+		Element element = (Element) this.xpath.compile(selector).evaluate(context, XPathConstants.NODE);
+
 		if (element == null) {
 			throw new SignVerificationException(customError);
 		}
 		
 		return element;
 	}
+
+	private Element querySelector(String selector, String customError) throws SignVerificationException, XPathExpressionException {
+		return querySelector(selector, doc.getDocumentElement(), customError);
+	}
 	
-	private ArrayList<Element> querySelectorAll(String selector) throws XPathExpressionException {
+	private ArrayList<Element> querySelectorAll(String selector, Element context) throws XPathExpressionException {
 		ArrayList<Element> elementList = new ArrayList<Element>();
 		
-		NodeList nodes = (NodeList) xpath.compile(selector).evaluate(doc, XPathConstants.NODESET);
+		NodeList nodes = (NodeList) xpath.compile(selector).evaluate(context, XPathConstants.NODESET);
 		
 		for (int i = 0; i < nodes.getLength(); i++) {
 			Node node = nodes.item(i);
@@ -494,6 +574,10 @@ public class SignedXml {
 		}
 		
 		return elementList;
+	}
+	
+	private ArrayList<Element> querySelectorAll(String selector) throws XPathExpressionException {
+		return querySelectorAll(selector, doc.getDocumentElement());
 	}
 	
 	private ArrayList<Element> getChildren(Element parent) {
@@ -540,6 +624,21 @@ public class SignedXml {
 		String attrValue = getAttributeValue(element, attrName);
 		if (!values.contains(attrValue)) {
 			throw new SignVerificationException(customError + "\n\nInvalid value: " + attrValue);
+		}
+	}
+	
+	/**
+	 *	Utilities - Serialize element to string
+	 */
+	private String serializeElement(Element element) throws SignVerificationException {
+		try {
+			StreamResult xmlOutput = new StreamResult(new StringWriter());
+			Transformer transformer = TransformerFactory.newInstance().newTransformer();
+			transformer.transform(new DOMSource(element), xmlOutput);
+			transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+			return xmlOutput.getWriter().toString();
+		} catch (TransformerFactoryConfigurationError | TransformerException e) {
+			throw new SignVerificationException("Cannot serialize XML element (Rule 24).");
 		}
 	}
 	
