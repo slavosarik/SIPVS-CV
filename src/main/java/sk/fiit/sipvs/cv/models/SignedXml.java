@@ -8,10 +8,13 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.Security;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.security.cert.CRLException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
@@ -143,6 +146,16 @@ public class SignedXml {
 		DIGESTS.put("http://www.w3.org/2001/04/xmlenc#sha512", "SHA-512");
 	}
 	
+	private static final Map<String, String> SIGNERS;
+	static {
+		SIGNERS = new HashMap<String, String>();
+		SIGNERS.put("http://www.w3.org/2000/09/xmldsig#dsa-sha1", "SHA1withDSA");
+		SIGNERS.put("http://www.w3.org/2000/09/xmldsig#rsa-sha1", "SHA1withRSA/ISO9796-2");
+		SIGNERS.put("http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", "SHA256withRSA");
+		SIGNERS.put("http://www.w3.org/2001/04/xmldsig-more#rsa-sha384", "SHA384withRSA");
+		SIGNERS.put("http://www.w3.org/2001/04/xmldsig-more#rsa-sha512", "SHA512withRSA");
+	}
+	
 	public SignedXml(File xmlFile) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException {
 		Security.addProvider(new BouncyCastleProvider());
 		org.apache.xml.security.Init.init();
@@ -245,7 +258,44 @@ public class SignedXml {
 	 *	Verify core - Rule 4, 5
 	 */
 	private void verifyCore() throws SignVerificationException, XPathExpressionException {
+		// Rule 4
 		// TODO
+		
+		// Rule 5
+		Element signatureValueElem = querySelector("//ds:Signature/ds:SignatureValue", "Cannot find 'ds:SignatureValue' element (Rule 5).");
+		Element signatureMethodElem = querySelector("//ds:Signature/ds:SignedInfo/ds:SignatureMethod",
+				"Cannot find 'ds:SignatureMethod' element (Rule 5).");
+		Element c14MethodElem = querySelector("//ds:Signature/ds:SignedInfo/ds:CanonicalizationMethod",
+				"Cannot find 'ds:CanonicalizationMethod' element (Rule 5).");
+		Element signedInfo = querySelector("//ds:Signature/ds:SignedInfo", "Cannot find 'ds:SignedInfo' element (Rule 5).");
+		
+		String signatureValue = signatureValueElem.getTextContent();
+		String signatureMethod = getAttributeValue(signatureMethodElem, "Algorithm");
+		
+		X509CertificateObject cert = getCertificate();
+
+		// Apply canonicalization
+		byte[] targetBytes = serializeElement(signedInfo).getBytes();
+		try {
+			Canonicalizer canon = Canonicalizer.getInstance(getAttributeValue(c14MethodElem, "Algorithm"));
+			targetBytes = canon.canonicalize(targetBytes);
+		} catch (InvalidCanonicalizerException | CanonicalizationException | ParserConfigurationException | IOException | SAXException e1) {
+			throw new SignVerificationException("Cannot apply canonicalization (Rule 5).");
+		}
+
+		// Verify signature
+		try {
+			Signature signer = Signature.getInstance(SIGNERS.get(signatureMethod), "BC");
+			signer.initVerify(cert.getPublicKey());
+			signer.update(targetBytes);
+			if (!signer.verify(Base64.decode(signatureValue.getBytes()))) {
+				throw new SignVerificationException("Signature verification failed (Rule 5).");	
+			}
+		} catch (NoSuchAlgorithmException | NoSuchProviderException e) {
+			throw new SignVerificationException("Invalid signature method (Rule 5).");
+		} catch (InvalidKeyException | SignatureException e) {
+			throw new SignVerificationException("Invalid certificate key; cannot verify signature (Rule 5).");
+		}
 	}
 
 	/**
@@ -631,7 +681,7 @@ public class SignedXml {
 	 */
 	private X509CertificateObject getCertificate() throws XPathExpressionException, SignVerificationException {
 		Element x509Certificate = querySelector("//ds:Signature/ds:KeyInfo/ds:X509Data/ds:X509Certificate",
-				"Cannot find 'ds:X509Certificate' element (Rule 15, 28).");
+				"Cannot find 'ds:X509Certificate' element (Rule 4, 5, 15, 28).");
 
 		X509CertificateObject cert = null;
 		ASN1InputStream is = null;
@@ -640,13 +690,13 @@ public class SignedXml {
 			ASN1Sequence sq = (ASN1Sequence) is.readObject();
 			cert = new X509CertificateObject(Certificate.getInstance(sq));
 		} catch (IOException | CertificateParsingException e) {
-			throw new SignVerificationException("Cannot read certificate (Rule 15, 28).");
+			throw new SignVerificationException("Cannot read certificate (Rule 4, 5, 15, 28).");
 		} finally {
 			if (is != null) {
 				try {
 					is.close();
 				} catch (IOException e) {
-					throw new SignVerificationException("Cannot read certificate (Rule 15, 28).");
+					throw new SignVerificationException("Cannot read certificate (Rule 4, 5, 15, 28).");
 				}
 			}
 		}
@@ -761,7 +811,7 @@ public class SignedXml {
 	
 	public static void main(String[] args) {
 		try {
-			File a = new File("C:\\dev\\sipvs\\SIPVS-CV\\xml_examples\\signed_examples\\clean.xml");
+			File a = new File("C:\\dev\\sipvs\\SIPVS-CV\\xml_examples\\signed_examples\\clean2.xml");
 			SignedXml sx = new SignedXml(a);
 			sx.verify();
 		} catch (Exception ex) {
