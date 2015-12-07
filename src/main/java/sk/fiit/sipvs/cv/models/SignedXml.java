@@ -196,7 +196,8 @@ public class SignedXml {
 		verifyEnvelope(); // Rule 1
 		verifySignatureAlgorithms(); // Rule 2
 		verifyTransformsAndDigest(); // Rule 3
-		verifyCore(); // Rule 4, 5
+		verifyCoreReferences(); // Rule 4
+		verifyCoreSignature(); // Rule 5
 		verifySignature(); // Rule 6, 7
 		verifySignatureValue(); // Rule 8
 		verifyReferences(); // Rule 9, 10, 11, 12
@@ -255,12 +256,62 @@ public class SignedXml {
 	}
 	
 	/**
-	 *	Verify core - Rule 4, 5
+	 *	Verify core references - Rule 4
 	 */
-	private void verifyCore() throws SignVerificationException, XPathExpressionException {
+	private void verifyCoreReferences() throws SignVerificationException, XPathExpressionException {
 		// Rule 4
-		// TODO
-		
+		ArrayList<Element> manifestReferences = querySelectorAll("//ds:Signature/ds:SignedInfo/ds:Reference[@Type='http://www.w3.org/2000/09/xmldsig#Manifest']");
+		for (Element e : manifestReferences) {
+			// Dereference URI
+			String urlTarget = getAttributeValue(e, "URI").substring(1);
+			Element target = querySelector(String.format("//ds:Manifest[@Id='%s']", urlTarget),
+					String.format("Cannot find referenced 'ds:Manifest' element with 'Id' = '%s' (Rule 4).", urlTarget));
+			byte[] targetBytes = serializeElement(target).getBytes();
+			
+			// Reference digest method
+			Element digestMethod = querySelector("ds:DigestMethod", e, "Cannot find 'ds:DigestMethod' inside 'ds:Reference' (Rule 4).");
+			shouldHaveAttributeValueFrom(digestMethod, "Algorithm", DIGEST_REFERENCES, "Invalid digest method (Rule 4).");
+
+			// Apply transforms (canonicalization)
+			ArrayList<Element> transforms = querySelectorAll("ds:Transforms/ds:Transform", e);
+			for (Element t : transforms) {
+				shouldHaveAttributeValueFrom(t, "Algorithm", REFERENCE_TRANSFORM_REFERENCES, "Invalid transform (Rule 4).");
+				
+				String transAlgorithm = getAttributeValue(t, "Algorithm");
+				if (transAlgorithm.equals("http://www.w3.org/TR/2001/REC-xml-c14n-20010315")) {
+					// Apply canonicalization
+					try {
+						Canonicalizer canon = Canonicalizer.getInstance(transAlgorithm);
+						targetBytes = canon.canonicalize(targetBytes);
+					} catch (InvalidCanonicalizerException | CanonicalizationException | ParserConfigurationException | IOException | SAXException e1) {
+						throw new SignVerificationException("Cannot apply canonicalization (Rule 4).");
+					}
+				}
+			}
+			
+			// Calculate digest of referenced element
+			MessageDigest messageDigest = null;
+			try {
+				messageDigest = MessageDigest.getInstance(DIGESTS.get(getAttributeValue(digestMethod, "Algorithm")), "BC");
+			} catch (NoSuchAlgorithmException | NoSuchProviderException e2) {
+				throw new SignVerificationException("Unsupported digest type (Rule 4).");
+			}
+			String targetDigest = new String(Base64.encode(messageDigest.digest(targetBytes)));
+			
+			// Retrieve expected digest
+			Element digestValue = querySelector("ds:DigestValue", e, "Cannot find 'ds:DigestValue' inside 'ds:Reference' (Rule 4).");
+			String expectedDigest = digestValue.getTextContent();
+
+			if (!targetDigest.equals(expectedDigest)) {
+				throw new SignVerificationException(String.format("Element 'ds:Reference' with reference to '%s' digest check failure (Rule 4).", urlTarget));
+			}
+		}
+	}
+
+	/**
+	 *	Verify core signature - Rule 5
+	 */
+	private void verifyCoreSignature() throws SignVerificationException, XPathExpressionException {
 		// Rule 5
 		Element signatureValueElem = querySelector("//ds:Signature/ds:SignatureValue", "Cannot find 'ds:SignatureValue' element (Rule 5).");
 		Element signatureMethodElem = querySelector("//ds:Signature/ds:SignedInfo/ds:SignatureMethod",
@@ -268,9 +319,6 @@ public class SignedXml {
 		Element c14MethodElem = querySelector("//ds:Signature/ds:SignedInfo/ds:CanonicalizationMethod",
 				"Cannot find 'ds:CanonicalizationMethod' element (Rule 5).");
 		Element signedInfo = querySelector("//ds:Signature/ds:SignedInfo", "Cannot find 'ds:SignedInfo' element (Rule 5).");
-		
-		String signatureValue = signatureValueElem.getTextContent();
-		String signatureMethod = getAttributeValue(signatureMethodElem, "Algorithm");
 		
 		X509CertificateObject cert = getCertificate();
 
@@ -283,12 +331,12 @@ public class SignedXml {
 			throw new SignVerificationException("Cannot apply canonicalization (Rule 5).");
 		}
 
-		// Verify signature
+		// Create signer and verify signature
 		try {
-			Signature signer = Signature.getInstance(SIGNERS.get(signatureMethod), "BC");
+			Signature signer = Signature.getInstance(SIGNERS.get(getAttributeValue(signatureMethodElem, "Algorithm")), "BC");
 			signer.initVerify(cert.getPublicKey());
 			signer.update(targetBytes);
-			if (!signer.verify(Base64.decode(signatureValue.getBytes()))) {
+			if (!signer.verify(Base64.decode(signatureValueElem.getTextContent().getBytes()))) {
 				throw new SignVerificationException("Signature verification failed (Rule 5).");	
 			}
 		} catch (NoSuchAlgorithmException | NoSuchProviderException e) {
@@ -461,9 +509,9 @@ public class SignedXml {
 			
 			// Dereference URI
 			// Rule 24
-			String urlTarget = getAttributeValue(e, "URI").substring(1);
+			String urlTarget = getAttributeValue(e, "URI").substring(1);		
 			Element target = querySelector(String.format("/xzep:DataEnvelope/ds:Object[@Id='%s']", urlTarget),
-					String.format("Cannot find referenced 'ds:Object' element with 'Id' = '%s' (Rule 24, 25)", urlTarget));
+					String.format("Cannot find referenced 'ds:Object' element with 'Id' = '%s' (Rule 24, 25).", urlTarget));
 			byte[] targetBytes = serializeElement(target).getBytes();
 			
 			// Reference digest method
@@ -508,7 +556,7 @@ public class SignedXml {
 			String expectedDigest = digestValue.getTextContent();			
 
 			if (!targetDigest.equals(expectedDigest)) {
-				throw new SignVerificationException("Element 'ds:Reference' digest check failure (Rule 25).");
+				throw new SignVerificationException(String.format("Element 'ds:Reference' with reference to '%s' digest check failure (Rule 25).", urlTarget));
 			}
 		}
 	}
@@ -802,21 +850,15 @@ public class SignedXml {
 		return new ByteArrayInputStream(outputStream.toByteArray());
 	}
 	
-	
-	
-	
-
-	
-	
-	
-	public static void main(String[] args) {
+	/*public static void main(String[] args) {
 		try {
-			File a = new File("C:\\dev\\sipvs\\SIPVS-CV\\xml_examples\\signed_examples\\clean2.xml");
+			//File a = new File("xml_examples/signed_examples/clean2.xml");
+			//File a = new File("xml_examples/signed_examples/01XadesT.xml");
 			SignedXml sx = new SignedXml(a);
 			sx.verify();
 		} catch (Exception ex) {
 			System.out.println(ex);
 		}
-	}
+	}*/
 
 }
