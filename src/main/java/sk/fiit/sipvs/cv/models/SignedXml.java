@@ -49,6 +49,9 @@ import javax.xml.xpath.XPathFactory;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.xml.security.c14n.CanonicalizationException;
+import org.apache.xml.security.c14n.Canonicalizer;
+import org.apache.xml.security.c14n.InvalidCanonicalizerException;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.x509.Certificate;
@@ -69,9 +72,6 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import exceptions.SignVerificationException;
-import nu.xom.Builder;
-import nu.xom.ParsingException;
-import nu.xom.canonical.Canonicalizer;
 
 public class SignedXml {
 
@@ -145,7 +145,7 @@ public class SignedXml {
 	
 	public SignedXml(File xmlFile) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException {
 		Security.addProvider(new BouncyCastleProvider());
-		//org.apache.xml.security.Init.init();
+		org.apache.xml.security.Init.init();
 
 		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 		dbFactory.setNamespaceAware(true);
@@ -431,28 +431,12 @@ public class SignedXml {
 				String transAlgorithm = getAttributeValue(t, "Algorithm");
 				if (transAlgorithm.equals("http://www.w3.org/TR/2001/REC-xml-c14n-20010315")) {
 					// Apply canonicalization
-					
 					try {
-						InputStream is = new ByteArrayInputStream(targetBytes);
-						Builder parser = new Builder();
-						nu.xom.Document doc;
-						doc = parser.build(is);
-						ByteArrayOutputStream canonicalOs = new ByteArrayOutputStream();
-						Canonicalizer canonicalizer = new Canonicalizer(canonicalOs, transAlgorithm);
-						canonicalizer.write(doc);
-						targetBytes = canonicalOs.toByteArray();
-						//System.out.println(new String(targetBytes));
-					} catch (ParsingException | IOException e1) {
-						throw new SignVerificationException("Cannot apply canonicalization (Rule 24).");
-					}
-
-					/*try {
 						Canonicalizer canon = Canonicalizer.getInstance(transAlgorithm);
 						targetBytes = canon.canonicalize(targetBytes);
-						//targetBytes = canon.canonicalizeSubtree(target);
-					} catch (CanonicalizationException | ParserConfigurationException | IOException | SAXException | InvalidCanonicalizerException e1) {
+					} catch (InvalidCanonicalizerException | CanonicalizationException | ParserConfigurationException | IOException | SAXException e1) {
 						throw new SignVerificationException("Cannot apply canonicalization (Rule 24).");
-					}*/
+					}
 				} else if (transAlgorithm.equals("http://www.w3.org/2000/09/xmldsig#base64")) {
 					// Apply base64 decode
 					targetBytes = Base64.decode(targetBytes);
